@@ -118,6 +118,281 @@ public sealed class EconomyService
         }
     }
 
+    public long ApplyGameplayReward(
+        EconomyAccount player,
+        long amountAtomic,
+        string eventType,
+        string referenceId,
+        string description,
+        string actor)
+    {
+        if (amountAtomic <= 0)
+            throw new InvalidOperationException(
+                "Gameplay reward must be positive.");
+
+        lock (_gate)
+        {
+            player = _db.GetAccountById(player.Id)
+                ?? throw new InvalidOperationException(
+                    "Player economy account was not found.");
+
+            if (player.Frozen)
+                throw new InvalidOperationException(
+                    "Player economy account is frozen.");
+
+            var treasury = GetTreasury();
+
+            treasury = _db.GetAccountById(treasury.Id)
+                ?? throw new InvalidOperationException(
+                    "Treasury account was not found.");
+
+            if (treasury.WalletAtomic < amountAtomic)
+                throw new InvalidOperationException(
+                    "The Terraria Treasury does not have enough funds " +
+                    "for this gameplay reward.");
+
+            var maximum =
+                _config().ToAtomic(
+                    _config().MaximumPlayerBalance);
+
+            if (checked(player.WalletAtomic + amountAtomic) > maximum)
+                throw new InvalidOperationException(
+                    "Gameplay reward would exceed the player's " +
+                    "maximum wallet balance.");
+
+            _db.SetBalances(
+                treasury.Id,
+                treasury.WalletAtomic - amountAtomic,
+                treasury.BankAtomic);
+
+            _db.SetBalances(
+                player.Id,
+                checked(player.WalletAtomic + amountAtomic),
+                player.BankAtomic);
+
+            _db.InsertTransaction(
+                Guid.NewGuid().ToString("N"),
+                treasury.Id,
+                player.Id,
+                amountAtomic,
+                "gameplay_reward",
+                eventType,
+                referenceId,
+                description,
+                actor);
+
+            return amountAtomic;
+        }
+    }
+
+    public long ApplyGameplayLoss(
+        EconomyAccount player,
+        long requestedAtomic,
+        long protectedBalanceAtomic,
+        string eventType,
+        string referenceId,
+        string description,
+        string actor)
+    {
+        if (requestedAtomic <= 0)
+            throw new InvalidOperationException(
+                "Gameplay loss must be positive.");
+
+        if (protectedBalanceAtomic < 0)
+            throw new InvalidOperationException(
+                "Protected balance cannot be negative.");
+
+        lock (_gate)
+        {
+            player = _db.GetAccountById(player.Id)
+                ?? throw new InvalidOperationException(
+                    "Player economy account was not found.");
+
+            if (player.Frozen)
+                throw new InvalidOperationException(
+                    "Player economy account is frozen.");
+
+            var available =
+                Math.Max(
+                    0L,
+                    player.WalletAtomic - protectedBalanceAtomic);
+
+            var actualLoss =
+                Math.Min(
+                    requestedAtomic,
+                    available);
+
+            if (actualLoss <= 0)
+                return 0;
+
+            var treasury = GetTreasury();
+
+            treasury = _db.GetAccountById(treasury.Id)
+                ?? throw new InvalidOperationException(
+                    "Treasury account was not found.");
+
+            _db.SetBalances(
+                player.Id,
+                player.WalletAtomic - actualLoss,
+                player.BankAtomic);
+
+            _db.SetBalances(
+                treasury.Id,
+                checked(treasury.WalletAtomic + actualLoss),
+                treasury.BankAtomic);
+
+            _db.InsertTransaction(
+                Guid.NewGuid().ToString("N"),
+                player.Id,
+                treasury.Id,
+                actualLoss,
+                "gameplay_loss",
+                eventType,
+                referenceId,
+                description,
+                actor);
+
+            return actualLoss;
+        }
+    }
+
+    public GameplayPvpResult ApplyGameplayPvpLoss(
+        EconomyAccount defeated,
+        EconomyAccount winner,
+        long requestedAtomic,
+        long protectedBalanceAtomic,
+        decimal winnerPercent,
+        string referenceId,
+        string description,
+        string actor)
+    {
+        if (requestedAtomic <= 0)
+            throw new InvalidOperationException(
+                "PvP loss must be positive.");
+
+        if (protectedBalanceAtomic < 0)
+            throw new InvalidOperationException(
+                "Protected balance cannot be negative.");
+
+        if (winnerPercent is < 0 or > 100)
+            throw new InvalidOperationException(
+                "PvP winner percentage must be between 0 and 100.");
+
+        if (defeated.Id == winner.Id)
+            throw new InvalidOperationException(
+                "A player cannot receive their own PvP loss.");
+
+        lock (_gate)
+        {
+            defeated = _db.GetAccountById(defeated.Id)
+                ?? throw new InvalidOperationException(
+                    "Defeated player account was not found.");
+
+            winner = _db.GetAccountById(winner.Id)
+                ?? throw new InvalidOperationException(
+                    "Winner account was not found.");
+
+            if (defeated.Frozen || winner.Frozen)
+                throw new InvalidOperationException(
+                    "One of the player economy accounts is frozen.");
+
+            var available =
+                Math.Max(
+                    0L,
+                    defeated.WalletAtomic - protectedBalanceAtomic);
+
+            var actualLoss =
+                Math.Min(
+                    requestedAtomic,
+                    available);
+
+            if (actualLoss <= 0)
+            {
+                return new GameplayPvpResult(
+                    0,
+                    0,
+                    0);
+            }
+
+            var winnerAmount =
+                Percent(
+                    actualLoss,
+                    winnerPercent);
+
+            // Use the remainder for treasury so atomic units
+            // always conserve exactly.
+            var treasuryAmount =
+                actualLoss - winnerAmount;
+
+            var maximum =
+                _config().ToAtomic(
+                    _config().MaximumPlayerBalance);
+
+            if (checked(winner.WalletAtomic + winnerAmount) > maximum)
+            {
+                throw new InvalidOperationException(
+                    "PvP award would exceed the winner's " +
+                    "maximum wallet balance.");
+            }
+
+            var treasury = GetTreasury();
+
+            treasury = _db.GetAccountById(treasury.Id)
+                ?? throw new InvalidOperationException(
+                    "Treasury account was not found.");
+
+            _db.SetBalances(
+                defeated.Id,
+                defeated.WalletAtomic - actualLoss,
+                defeated.BankAtomic);
+
+            if (winnerAmount > 0)
+            {
+                _db.SetBalances(
+                    winner.Id,
+                    checked(winner.WalletAtomic + winnerAmount),
+                    winner.BankAtomic);
+
+                _db.InsertTransaction(
+                    Guid.NewGuid().ToString("N"),
+                    defeated.Id,
+                    winner.Id,
+                    winnerAmount,
+                    "gameplay_pvp_award",
+                    "pvp",
+                    referenceId,
+                    description,
+                    actor);
+            }
+
+            if (treasuryAmount > 0)
+            {
+                _db.SetBalances(
+                    treasury.Id,
+                    checked(
+                        treasury.WalletAtomic +
+                        treasuryAmount),
+                    treasury.BankAtomic);
+
+                _db.InsertTransaction(
+                    Guid.NewGuid().ToString("N"),
+                    defeated.Id,
+                    treasury.Id,
+                    treasuryAmount,
+                    "gameplay_pvp_treasury",
+                    "pvp",
+                    referenceId,
+                    description,
+                    actor);
+            }
+
+            return new GameplayPvpResult(
+                actualLoss,
+                winnerAmount,
+                treasuryAmount);
+        }
+    }
+
     public long Percent(long amount, decimal percent) => checked((long)Math.Round(amount * percent / 100m, 0, MidpointRounding.AwayFromZero));
 
     private void CreditFee(EconomyAccount source, long fee, string description, string actor)

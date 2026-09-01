@@ -1,5 +1,63 @@
 # Changelog
 
+All notable changes to Arkovia Economy are documented here.
+
+---
+
+## Unreleased
+
+### Added
+
+- Configurable off-chain gameplay economy for Terraria.
+- NPC kill rewards backed by the internal treasury.
+- Configurable reward ranges for common enemies, strong/rare enemies, early bosses, mid-game bosses, end-game bosses, and quests.
+- Configurable gameplay reward broadcast modes: `PlayerOnly`, `Nearby`, `Global`, and `Silent`.
+- Normal death Wallet penalties with protected Bank balances, cooldown protection, and no negative balances.
+- PvP economy penalties with configurable winner/treasury distribution.
+- Native Terraria floating/combat-text feedback for positive and negative currency changes.
+- Player-created Arkovia blockchain wallets initiated in-game.
+- Public Arkovia account identity linked to stable TShock user accounts.
+- Protected wallet recovery workflow separated from the normal gameplay economy database.
+- Optional local wallet-recovery claim service integration for supported deployments.
+- `/arkos balance` for public on-chain balance lookup.
+- `/arkos wallet create`, `/arkos wallet address`, `/arkos wallet status`, and `/arkos wallet recovery`.
+- Old Ones Army / DD2 event tracking infrastructure.
+- Configurable currency presentation for projects building their own economy on Arkovia-compatible infrastructure.
+- Public compiled plugin at `release/ArkoviaEconomy.dll`.
+
+### Changed
+
+- Standardized the native currency presentation on `ARKOS`.
+- Changed the default `CurrencyName` from `Arkos` to `ARKOS`.
+- Expanded documentation for gameplay economy, wallet security, blockchain integration, custom currency deployments, installation, and configuration.
+- Clarified the distinction between the off-chain gameplay Wallet, off-chain Bank, and real Arkovia blockchain wallet.
+- Clarified that `/bank deposit` and `/bank withdraw` are internal Wallet/Bank movements and are not blockchain deposit/withdraw operations.
+- Clarified that the Community & Development funding synchronizer is read-only while wallet generation uses a separate protected recovery workflow.
+
+### Security
+
+- Recovery secrets are kept out of the ordinary TShock economy database and normal configuration.
+- Recovery secrets and private keys must never be placed in ordinary Terraria chat or commands.
+- Public wallet identity is separated from private recovery material.
+- Recovery claim integration uses a separately protected local service in supported deployments.
+- Documentation now explicitly separates public blockchain information from sensitive recovery/signing material.
+
+### In Development / Not Yet Enabled
+
+- Blockchain deposits into the gameplay economy.
+- Blockchain withdrawals from the gameplay economy.
+- Outgoing ARKOS transaction signing.
+- Transaction-fee quoting for outgoing payments.
+- Automatic starter-wallet ARKOS grants.
+- Player security PIN authorization.
+- Contribution-based multiplayer boss reward pools.
+- Completed DD2 event reward settlement.
+- Additional invasion and world-event reward pools.
+
+> DD2 tracking infrastructure exists, but completion payout remains disabled pending a safe atomic multiplayer treasury settlement design.
+
+---
+
 ## 1.0.0 - 2026-08-27
 
 - Initial Arkovia Economy TShock project.

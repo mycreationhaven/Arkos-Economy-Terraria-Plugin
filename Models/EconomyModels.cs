@@ -55,3 +55,8 @@ public sealed record MarketListing(
     string Status,
     DateTime CreatedUtc,
     DateTime ExpiresUtc);
+
+public sealed record GameplayPvpResult(
+    long ActualLossAtomic,
+    long WinnerAmountAtomic,
+    long TreasuryAmountAtomic);

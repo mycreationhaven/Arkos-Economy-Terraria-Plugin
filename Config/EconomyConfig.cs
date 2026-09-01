@@ -4,8 +4,8 @@ namespace ArkoviaEconomy.Config;
 
 public sealed class EconomyConfig
 {
-    public string CurrencyName { get; set; } = "Arkos";
-    public string CurrencySymbol { get; set; } = "ARK";
+    public string CurrencyName { get; set; } = "ARKOS";
+    public string CurrencySymbol { get; set; } = "ARKOS";
     public int Decimals { get; set; } = 8;
     public decimal StartingBalance { get; set; } = 0m;
     public decimal MinimumTransfer { get; set; } = 0.01m;
@@ -18,6 +18,7 @@ public sealed class EconomyConfig
     public BankingConfig Banking { get; set; } = new();
     public ArkoviaConfig Arkovia { get; set; } = new();
     public RewardConfig Rewards { get; set; } = new();
+    public GameplayEconomyConfig GameplayEconomy { get; set; } = new();
     public ApiConfig Api { get; set; } = new();
 
     [JsonIgnore]
@@ -66,6 +67,90 @@ public sealed class RewardConfig
     public bool EnforceTreasurySolvency { get; set; } = true;
     public decimal DailyReward { get; set; } = 0m;
     public decimal NewPlayerReward { get; set; } = 0m;
+}
+
+public sealed class GameplayEconomyConfig
+{
+    public bool Enabled { get; set; } = true;
+
+    // Supported:
+    // PlayerOnly, Nearby, Global, Silent
+    public string DefaultBroadcastMode { get; set; } = "PlayerOnly";
+
+    public GameplayRewardRangesConfig Rewards { get; set; } = new();
+    public GameplayDeathConfig Death { get; set; } = new();
+    public GameplayPvpConfig PvP { get; set; } = new();
+}
+
+public sealed class GameplayRewardRangesConfig
+{
+    public GameplayRewardRange CommonEnemy { get; set; } =
+        new(0.0001m, 0.001m);
+
+    public GameplayRewardRange StrongRareEnemy { get; set; } =
+        new(0.005m, 0.05m);
+
+    public GameplayRewardRange EarlyBoss { get; set; } =
+        new(0.10m, 0.25m);
+
+    public GameplayRewardRange MidBoss { get; set; } =
+        new(0.25m, 0.50m);
+
+    public GameplayRewardRange EndGameBoss { get; set; } =
+        new(0.50m, 1.00m);
+
+    public GameplayRewardRange Quest { get; set; } =
+        new(0.05m, 0.25m);
+}
+
+public sealed class GameplayRewardRange
+{
+    public GameplayRewardRange()
+    {
+    }
+
+    public GameplayRewardRange(
+        decimal minimum,
+        decimal maximum)
+    {
+        Minimum = minimum;
+        Maximum = maximum;
+    }
+
+    public bool Enabled { get; set; } = true;
+    public decimal Minimum { get; set; }
+    public decimal Maximum { get; set; }
+}
+
+public sealed class GameplayDeathConfig
+{
+    public bool Enabled { get; set; } = true;
+
+    // Default ordinary death loss.
+    public decimal Penalty { get; set; } = 0.005m;
+
+    // Gameplay penalties affect the wallet balance only.
+    // Banked currency remains protected.
+    public decimal MinimumProtectedBalance { get; set; } = 0m;
+
+    public int CooldownSeconds { get; set; } = 60;
+
+    public bool ShowZeroBalanceMessage { get; set; } = true;
+}
+
+public sealed class GameplayPvpConfig
+{
+    public bool Enabled { get; set; } = true;
+
+    public decimal Penalty { get; set; } = 0.01m;
+
+    public decimal MinimumProtectedBalance { get; set; } = 0m;
+
+    public decimal WinnerPercent { get; set; } = 75m;
+
+    public decimal TreasuryPercent { get; set; } = 25m;
+
+    public int CooldownSeconds { get; set; } = 60;
 }
 
 public sealed class ApiConfig

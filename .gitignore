@@ -1,0 +1,53 @@
+# .NET build output
+bin/
+obj/
+
+# IDE
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+
+# Operating system
+.DS_Store
+Thumbs.db
+
+# Local databases
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# Runtime configuration
+config.json
+
+# Secrets / credentials
+*.secret
+*.key
+*.pem
+*secret*phrase*
+*private*key*
+*api*key*
+
+# Wallet recovery material
+wallet-recovery/
+recovery/
+
+# Temporary/source backups
+*.before-*
+*.bak
+*.backup
+
+# Logs
+*.log
+
+# Runtime server files
+tshock/
+worlds/
+ServerPlugins/*
+!release/ArkoviaEconomy.dll
+*.v1-backup.md
+*.v1-backup.json
+*.pre-arkos-name-fix

@@ -1,6 +1,6 @@
 {
-  "CurrencyName": "Arkos",
-  "CurrencySymbol": "ARK",
+  "CurrencyName": "ARKOS",
+  "CurrencySymbol": "ARKOS",
   "Decimals": 8,
   "StartingBalance": 0.0,
   "MinimumTransfer": 0.01,
@@ -10,6 +10,7 @@
   "MarketListingFeePercent": 1.0,
   "MarketSalesTaxPercent": 2.0,
   "ReturnServerFeesToTreasury": true,
+
   "Banking": {
     "Enabled": true,
     "DepositFeePercent": 0.0,
@@ -18,6 +19,66 @@
     "InterestIntervalHours": 24,
     "MaximumInterestPerInterval": 100.0
   },
+
+  "Rewards": {
+    "Enabled": true,
+    "EnforceTreasurySolvency": true,
+    "DailyReward": 0.0,
+    "NewPlayerReward": 0.0
+  },
+
+  "GameplayEconomy": {
+    "Enabled": true,
+    "DefaultBroadcastMode": "PlayerOnly",
+    "Rewards": {
+      "CommonEnemy": {
+        "Enabled": true,
+        "Minimum": 0.0001,
+        "Maximum": 0.001
+      },
+      "StrongRareEnemy": {
+        "Enabled": true,
+        "Minimum": 0.005,
+        "Maximum": 0.05
+      },
+      "EarlyBoss": {
+        "Enabled": true,
+        "Minimum": 0.10,
+        "Maximum": 0.25
+      },
+      "MidBoss": {
+        "Enabled": true,
+        "Minimum": 0.25,
+        "Maximum": 0.50
+      },
+      "EndGameBoss": {
+        "Enabled": true,
+        "Minimum": 0.50,
+        "Maximum": 1.00
+      },
+      "Quest": {
+        "Enabled": true,
+        "Minimum": 0.05,
+        "Maximum": 0.25
+      }
+    },
+    "Death": {
+      "Enabled": true,
+      "Penalty": 0.005,
+      "MinimumProtectedBalance": 0.0,
+      "CooldownSeconds": 60,
+      "ShowZeroBalanceMessage": true
+    },
+    "PvP": {
+      "Enabled": true,
+      "Penalty": 0.01,
+      "MinimumProtectedBalance": 0.0,
+      "WinnerPercent": 75.0,
+      "TreasuryPercent": 25.0,
+      "CooldownSeconds": 60
+    }
+  },
+
   "Arkovia": {
     "Enabled": true,
     "NodeUrl": "http://127.0.0.1:4876/nxt",
@@ -31,12 +92,7 @@
     "CreditOnlyPositiveLedgerChanges": true,
     "RequireNodeToBeLocalOrHttps": true
   },
-  "Rewards": {
-    "Enabled": true,
-    "EnforceTreasurySolvency": true,
-    "DailyReward": 0.0,
-    "NewPlayerReward": 0.0
-  },
+
   "Api": {
     "EnablePublicReadApi": true,
     "ExposePlayerBalances": false
