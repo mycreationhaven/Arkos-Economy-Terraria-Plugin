@@ -1,0 +1,44 @@
+{
+  "CurrencyName": "Arkos",
+  "CurrencySymbol": "ARK",
+  "Decimals": 8,
+  "StartingBalance": 0.0,
+  "MinimumTransfer": 0.01,
+  "MaximumPlayerBalance": 1000000000.0,
+  "PlayerTransferFeePercent": 0.0,
+  "ShopSalesTaxPercent": 0.0,
+  "MarketListingFeePercent": 1.0,
+  "MarketSalesTaxPercent": 2.0,
+  "ReturnServerFeesToTreasury": true,
+  "Banking": {
+    "Enabled": true,
+    "DepositFeePercent": 0.0,
+    "WithdrawalFeePercent": 0.0,
+    "InterestAprPercent": 0.0,
+    "InterestIntervalHours": 24,
+    "MaximumInterestPerInterval": 100.0
+  },
+  "Arkovia": {
+    "Enabled": true,
+    "NodeUrl": "http://127.0.0.1:4876/nxt",
+    "CommunityDevelopmentAccount": "ARK-KVFL-C6EE-2UD2-CSJ8Q",
+    "ExpectedLedgerEventType": "BLOCK_GENERATED",
+    "MinimumConfirmations": 10,
+    "PollSeconds": 60,
+    "LedgerPageSize": 100,
+    "GameAllocationPercent": 100.0,
+    "FeeDistributionActivationHeight": 1500,
+    "CreditOnlyPositiveLedgerChanges": true,
+    "RequireNodeToBeLocalOrHttps": true
+  },
+  "Rewards": {
+    "Enabled": true,
+    "EnforceTreasurySolvency": true,
+    "DailyReward": 0.0,
+    "NewPlayerReward": 0.0
+  },
+  "Api": {
+    "EnablePublicReadApi": true,
+    "ExposePlayerBalances": false
+  }
+}

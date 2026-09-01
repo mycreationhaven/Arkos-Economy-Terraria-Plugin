@@ -1,0 +1,7 @@
+Arkovia Economy is provided under the GNU General Public License v3.0 or later (GPL-3.0-or-later),
+consistent with the licensing requirements of the TShock package it references.
+
+For the complete GPL v3 text, see https://www.gnu.org/licenses/gpl-3.0.txt
+
+Arkovia blockchain source may be subject to separate Nxt/Jelurida licensing terms. This plugin does not copy
+or embed the Arkovia/Nxt blockchain source; it communicates with a configured Arkovia node over its HTTP API.
