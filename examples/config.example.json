@@ -29,7 +29,9 @@
 
   "GameplayEconomy": {
     "Enabled": true,
-    "DefaultBroadcastMode": "PlayerOnly",
+    "DefaultBroadcastMode": "Silent",
+    "LogNpcRewardDecisions": true,
+    "FloatingRewardTextDurationSeconds": 3.5,
     "Rewards": {
       "CommonEnemy": {
         "Enabled": true,

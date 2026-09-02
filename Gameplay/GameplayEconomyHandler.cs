@@ -361,33 +361,66 @@ public sealed class GameplayEconomyHandler : IDisposable
             if (npc == null)
                 return;
 
+            var cfg = _config();
+
+            var npcName =
+                Lang.GetNPCNameValue(npc.netID);
+
+            if (string.IsNullOrWhiteSpace(npcName))
+                npcName = $"NPC {npc.netID}";
+
+            void LogDecision(
+                string result,
+                string reason,
+                int? playerIndex = null,
+                long rewardAtomic = 0)
+            {
+                if (!cfg.GameplayEconomy.LogNpcRewardDecisions)
+                    return;
+
+                TShock.Log.ConsoleInfo(
+                    $"[ArkoviaEconomy] NPC reward decision: " +
+                    $"NPC={npcName}, NetID={npc.netID}, " +
+                    $"WhoAmI={npc.whoAmI}, Boss={npc.boss}, " +
+                    $"LifeMax={npc.lifeMax}, Statue={npc.SpawnedFromStatue}, " +
+                    $"Player={(playerIndex.HasValue ? playerIndex.Value.ToString() : "none")}, " +
+                    $"Result={result}, Reason={reason}, RewardAtomic={rewardAtomic}.");
+            }
+
             // Always remove attribution when this NPC slot dies.
             if (!_lastNpcAttacker.TryRemove(
                     npc.whoAmI,
                     out var playerIndex))
             {
+                LogDecision("SKIPPED", "NO_KILLER_ATTRIBUTION");
                 return;
             }
 
-            var cfg = _config();
-
             if (!cfg.GameplayEconomy.Enabled)
+            {
+                LogDecision("SKIPPED", "GAMEPLAY_ECONOMY_DISABLED", playerIndex);
                 return;
+            }
 
             if (npc.friendly ||
                 npc.townNPC ||
                 npc.lifeMax <= 0)
             {
+                LogDecision("SKIPPED", "INELIGIBLE_NPC", playerIndex);
                 return;
             }
 
             // Prevent obvious statue farming.
             if (npc.SpawnedFromStatue)
+            {
+                LogDecision("SKIPPED", "STATUE_FARM_PROTECTION", playerIndex);
                 return;
+            }
 
             if (playerIndex < 0 ||
                 playerIndex >= TShock.Players.Length)
             {
+                LogDecision("SKIPPED", "INVALID_PLAYER_INDEX", playerIndex);
                 return;
             }
 
@@ -400,6 +433,7 @@ public sealed class GameplayEconomyHandler : IDisposable
                 !player.IsLoggedIn ||
                 player.Account == null)
             {
+                LogDecision("SKIPPED", "PLAYER_NOT_ELIGIBLE", playerIndex);
                 return;
             }
 
@@ -412,6 +446,7 @@ public sealed class GameplayEconomyHandler : IDisposable
             if (rewardRange == null ||
                 !rewardRange.Enabled)
             {
+                LogDecision("SKIPPED", "REWARD_CLASS_DISABLED", playerIndex);
                 return;
             }
 
@@ -422,13 +457,12 @@ public sealed class GameplayEconomyHandler : IDisposable
                 cfg.ToAtomic(rewardRange.Maximum);
 
             if (minimumAtomic <= 0 ||
-                maximumAtomic <= 0)
+                maximumAtomic <= 0 ||
+                maximumAtomic < minimumAtomic)
             {
+                LogDecision("SKIPPED", "INVALID_REWARD_RANGE", playerIndex);
                 return;
             }
-
-            if (maximumAtomic < minimumAtomic)
-                return;
 
             var rewardAtomic =
                 minimumAtomic == maximumAtomic
@@ -438,22 +472,15 @@ public sealed class GameplayEconomyHandler : IDisposable
                         checked(maximumAtomic + 1));
 
             if (rewardAtomic <= 0)
+            {
+                LogDecision("SKIPPED", "ZERO_REWARD", playerIndex);
                 return;
+            }
 
             var account =
                 _economy.GetOrCreatePlayer(
                     player.Account.ID,
                     player.Name);
-
-            var npcName =
-                Lang.GetNPCNameValue(
-                    npc.netID);
-
-            if (string.IsNullOrWhiteSpace(npcName))
-            {
-                npcName =
-                    $"NPC {npc.netID}";
-            }
 
             var referenceId =
                 $"npc:{npc.netID}:{npc.whoAmI}:" +
@@ -480,11 +507,23 @@ public sealed class GameplayEconomyHandler : IDisposable
             {
                 // Treasury-backed economy:
                 // no money is created if the treasury cannot fund it.
+                LogDecision(
+                    "SKIPPED",
+                    "TREASURY_INSUFFICIENT",
+                    playerIndex,
+                    rewardAtomic);
                 return;
             }
 
             if (actualReward <= 0)
+            {
+                LogDecision(
+                    "SKIPPED",
+                    "ECONOMY_RETURNED_ZERO",
+                    playerIndex,
+                    rewardAtomic);
                 return;
+            }
 
             ShowFloatingCurrencyChange(
                 player,
@@ -492,11 +531,11 @@ public sealed class GameplayEconomyHandler : IDisposable
                 actualReward,
                 true);
 
-            SendRewardMessage(
-                player,
-                cfg,
-                $"You earned {cfg.Format(actualReward)} " +
-                $"for killing {npcName}.");
+            LogDecision(
+                "AWARDED",
+                rewardClass,
+                playerIndex,
+                actualReward);
         }
         catch (Exception ex)
         {
@@ -562,23 +601,10 @@ public sealed class GameplayEconomyHandler : IDisposable
 
         try
         {
+            // Keep the configured currency symbol in floating combat text.
+            // Example: +0.001 ARKOS or -0.001 ARKOS.
             var formatted =
                 cfg.Format(amountAtomic);
-
-            // cfg.Format normally includes the configured currency symbol.
-            // Floating combat text intentionally shows the signed NUMBER only.
-            var symbol =
-                cfg.CurrencySymbol?.Trim();
-
-            if (!string.IsNullOrWhiteSpace(symbol))
-            {
-                formatted =
-                    formatted.Replace(
-                        symbol,
-                        string.Empty,
-                        StringComparison.OrdinalIgnoreCase)
-                    .Trim();
-            }
 
             var floatingText =
                 isGain
