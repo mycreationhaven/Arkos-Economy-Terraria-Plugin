@@ -75,7 +75,15 @@ public sealed class GameplayEconomyConfig
 
     // Supported:
     // PlayerOnly, Nearby, Global, Silent
-    public string DefaultBroadcastMode { get; set; } = "PlayerOnly";
+    public string DefaultBroadcastMode { get; set; } = "Silent";
+
+    // Diagnostic logging for NPC reward attribution and payout decisions.
+    public bool LogNpcRewardDecisions { get; set; } = true;
+
+    // Target display duration for custom floating reward UI.
+    // Terraria packet 119 currently controls its own client-side lifetime,
+    // so this value is reserved until a safe custom renderer is added.
+    public double FloatingRewardTextDurationSeconds { get; set; } = 3.5;
 
     public GameplayRewardRangesConfig Rewards { get; set; } = new();
     public GameplayDeathConfig Death { get; set; } = new();
