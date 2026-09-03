@@ -1,6 +1,8 @@
-# 🌎 Arkovia Economy for Terraria / TShock
+# 🌎 Arkovia Economy for Terraria / TShock — v1.3.0-rc.1
 
-> A treasury-backed Terraria economy with gameplay rewards, banking, PvP economics, player blockchain wallets, and optional Arkovia blockchain integration.
+> A treasury-backed Terraria economy with paid ranks, quests, jobs, gameplay rewards, banking, player blockchain wallets, and optional Arkovia blockchain integration.
+
+**Current repository build: `v1.3.0-rc.1` (release candidate).** [Download the included DLL](release/ArkoviaEconomy.dll) · [Progression setup](docs/PROGRESSION.md) · [Changelog](CHANGELOG.md) · [Validation](VALIDATION.md). Live-server staging is still required; the repository build and GitHub Releases may differ until a release is published.
 
 **Arkovia Economy** is an open-source economy plugin for Terraria servers running TShock.
 
@@ -45,7 +47,7 @@ Server operators can use the native **ARKOS** currency or customize the economy 
 
 ---
 
-## New in 1.3.0 release candidate
+## New in v1.3.0-rc.1
 
 Plugin logs now go to `tshock/ArkoviaEconomy/logs/`, with daily/size rotation and 14-day retention. See [logging](docs/LOGGING.md).
 
@@ -413,7 +415,7 @@ The current plugin should not be interpreted as moving every gameplay transactio
 - secure recovery workflow integration
 - on-chain balance lookup
 
-### New in 1.2.0 release candidate
+### Blockchain features included in v1.3.0-rc.1 (introduced in 1.2.0)
 
 Confirmed blockchain deposits, PIN-authorized withdrawals, fee review, a separate local signing service, and optional one-time starter grants are implemented. These features are disabled until configured; installing the DLL alone does not enable reserve spending.
 
@@ -447,6 +449,28 @@ Authorized administrators with audit permission may also inspect another TShock 
 
 ---
 
+## 🏆 Rank, Quest and Job Commands
+
+| Command | Permission | Description |
+|---|---|---|
+| `/rank` | `arkoviaeconomy.rank` | Show current level, XP, combat-active minutes and next-rank requirements |
+| `/rank up` or `/rankup` | `arkoviaeconomy.rank` | Purchase the next rank after meeting its requirements and cooldown |
+| `/rank claim` | `arkoviaeconomy.rank` | Claim pending one-time rank item rewards while alive |
+| `/quest` or `/quests` | `arkoviaeconomy.quests` | List quests and objective counts |
+| `/quest accept <id>` | `arkoviaeconomy.quests` | Select one quest |
+| `/quest claim` or `/quest leave` | `arkoviaeconomy.quests` | Claim a completed quest or stop tracking it |
+| `/job` or `/jobs` | `arkoviaeconomy.jobs` | List jobs and objective counts |
+| `/job join <id>` | `arkoviaeconomy.jobs` | Select one job |
+| `/job claim` or `/job leave` | `arkoviaeconomy.jobs` | Collect completed work rewards or leave the job |
+
+Ranks 1–100 use configurable wallet costs, cumulative XP and combat-active minutes. The default cooldown is 12 hours after promotion or demotion. Each accepted death, including PvP, demotes one level with level 1 as the floor; rank changes broadcast serverwide. Existing death currency penalties and the separate PvP split still apply. Rank fees go to Terraria Treasury; Bank balances are protected.
+
+Permissions are cumulative up to the current rank and lost-rank perks are removed on demotion without replacing base TShock groups. Rank 100 grants admin permissions and requires owner approval by default. Item rewards are granted only on the first purchase of a level, preventing repeated rewards after demotion. Items already delivered are not confiscated.
+
+One selected quest and one job can progress together. This release supports configurable **NPC-kill objectives**, persistent progress, daily quotas and treasury-funded currency/XP claims. Mining, fishing and crafting objectives remain future work. See [configuration, defaults and delivery limitations](docs/PROGRESSION.md).
+
+---
+
 ## ⛓️ Player Blockchain Commands
 
 The `/arkos` command family manages the players Arkovia blockchain identity.
@@ -457,7 +481,13 @@ The `/arkos` command family manages the players Arkovia blockchain identity.
 /arkos wallet address
 /arkos wallet status
 /arkos wallet recovery
+/arkos deposit [transaction-full-hash]
+/arkos security
+/arkos pin
+/arkos withdraw
 ```
+
+Transfers and the private PIN/withdrawal portal require operator configuration. Never include a PIN in Terraria commands; use the private HTTPS portal. See [blockchain setup](docs/BLOCKCHAIN_SETUP.md).
 
 ### `/arkos balance`
 
@@ -491,6 +521,9 @@ This command should never require the player to type the wallets existing recove
 
 | Command | Permission | Description |
 |---|---|---|
+| `/rankadmin <account-id> approve` or `revoke` | `arkoviaeconomy.admin` plus base-group `arkoviaeconomy.rank.approve` (or console) | Approve or revoke rank-100 admin access; rank requirements and fee still apply |
+| `/treasury add <amount>` | `arkoviaeconomy.admin.treasury` | Add an audited amount to Terraria Treasury |
+| `/treasury take <amount>` | `arkoviaeconomy.admin.treasury` | Remove an audited amount from Terraria Treasury |
 | `/eco reload` | `arkoviaeconomy.admin.config` | Reload economy configuration |
 | `/eco sync` | `arkoviaeconomy.admin.treasury` | Run an immediate Arkovia funding synchronization |
 | `/eco give <user> <amount> <reason>` | `arkoviaeconomy.admin.adjust` | Create an audited positive administrative adjustment |
@@ -514,6 +547,13 @@ arkoviaeconomy.bank
 arkoviaeconomy.shop
 arkoviaeconomy.market
 arkoviaeconomy.jobs
+arkoviaeconomy.quests
+arkoviaeconomy.rank
+arkoviaeconomy.rank.approve
+arkoviaeconomy.security
+arkoviaeconomy.blockchain.deposit
+arkoviaeconomy.blockchain.withdraw
+arkoviaeconomy.blockchain.starter
 arkoviaeconomy.treasury.view
 arkoviaeconomy.wallet
 
@@ -529,6 +569,14 @@ Example player/trusted-group permissions:
 ```text
 /group addperm trusted arkoviaeconomy.use,arkoviaeconomy.pay,arkoviaeconomy.bank,arkoviaeconomy.wallet
 ```
+
+Grant progression commands separately as appropriate:
+
+```text
+/group addperm trusted arkoviaeconomy.rank,arkoviaeconomy.quests,arkoviaeconomy.jobs
+```
+
+Keep `arkoviaeconomy.rank.approve` restricted to trusted staff base groups. Rank-earned wildcard permissions cannot satisfy the base-group approval check.
 
 Example administrative permissions:
 
@@ -560,7 +608,7 @@ The off-chain Terraria economy should be treated separately from blockchain avai
 
 ### Option A — Install the Included DLL
 
-This repository includes a compiled plugin at:
+The `v1.3.0-rc.1` repository build includes a compiled plugin at:
 
 ```text
 release/ArkoviaEconomy.dll
@@ -574,7 +622,7 @@ Copy the DLL into the TShock server plugin directory:
 
 Then restart the TShock server.
 
-Check the server console during startup for Arkovia Economy initialization messages or errors.
+Check `tshock/ArkoviaEconomy/logs/arkovia-YYYY-MM-DD.log` for plugin initialization and diagnostics. Files rotate daily and at 10 MiB, with 14-day retention. The path follows your configured TShock save directory. Console reporting is reserved for log-write failures (rate-limited); TShock’s own messages and command auditing are separate. See [logging](docs/LOGGING.md).
 
 ### Option B — Build from Source
 
@@ -1038,9 +1086,9 @@ docs/SECURITY.md
 
 ## 🛣️ Roadmap
 
-The requested event, deposit, withdrawal, starter-grant, and PIN features are implemented in this release candidate. Live game-server/node staging remains required before enabling blockchain spending.
+Version `v1.3.0-rc.1` includes dedicated plugin logs, paid ranks, death demotion, rank permissions/items, NPC quests and jobs, plus the previously implemented event, deposit, withdrawal, starter-grant and PIN features. Live game-server/node staging remains required before enabling blockchain spending.
 
-Future work includes full reserve/liability reports, automatic deposit discovery, external-wallet ownership linking, forgotten-PIN recovery tooling, boss-specific pools, active-encounter restart recovery, and shop/market/job features. See [the current roadmap](docs/ROADMAP.md).
+Future work includes full reserve/liability reports, automatic deposit discovery, external-wallet ownership linking, forgotten-PIN recovery tooling, boss-specific pools, active-encounter restart recovery, shop/market features, and mining/fishing/crafting job objectives. See [the current roadmap](docs/ROADMAP.md).
 
 ---
 
@@ -1099,7 +1147,10 @@ Additional documentation is available in the `docs/` directory:
 | `docs/DATABASE.md` | Database and ledger structure |
 | `docs/API.md` | Developer integration API |
 | `docs/SECURITY.md` | Detailed security guidance |
-| `docs/ROADMAP.md` | Planned development |
+| [docs/PROGRESSION.md](docs/PROGRESSION.md) | Ranks, permissions, quests, jobs and default progression requirements |
+| [docs/LOGGING.md](docs/LOGGING.md) | Plugin log location, rotation and retention |
+| [docs/BLOCKCHAIN_SETUP.md](docs/BLOCKCHAIN_SETUP.md) | Transfer reserve, signer and HTTPS PIN portal deployment |
+| `docs/ROADMAP.md` | Remaining development |
 
 ---
 
