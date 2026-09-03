@@ -1,3 +1,11 @@
+# 1.3.0-rc.1
+
+- Move plugin logs into its own rotating files.
+- Add configurable paid ranks 1–100, activity/XP gates, death demotion, broadcasts, permission perks and one-time items.
+- Add owner approval for level-100 administrator access by default.
+- Add configurable NPC quests/jobs with daily limits, persistent progress and atomic treasury-funded claims.
+- Preserve existing balances and separate PvP split. See docs/PROGRESSION.md for scope and staging requirements.
+
 ## 1.2.0-rc.1 — Events and blockchain settlement
 
 - Fixed DD2 victory-hook ordering and limited contribution to event enemies.

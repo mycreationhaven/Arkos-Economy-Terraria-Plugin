@@ -16,6 +16,9 @@ Server operators can use the native **ARKOS** currency or customize the economy 
 
 | Feature | Status |
 |---|---|
+| Dedicated rotating plugin log files | ✅ Available |
+| Paid ranks 1–100, death demotion, permission perks and items | ✅ Implemented — staging validation |
+| Configurable NPC quests and jobs | ✅ Implemented — staging validation |
 | TShock account-based economy | ✅ Available |
 | 8-decimal atomic accounting | ✅ Available |
 | Player Wallet balance | ✅ Available |
@@ -41,6 +44,12 @@ Server operators can use the native **ARKOS** currency or customize the economy 
 | Additional Terraria event rewards | ✅ Implemented — staging validation |
 
 ---
+
+## New in 1.3.0 release candidate
+
+Plugin logs now go to `tshock/ArkoviaEconomy/logs/`, with daily/size rotation and 14-day retention. See [logging](docs/LOGGING.md).
+
+`/rank` and `/rank up` provide a configurable 100-level ladder with increasing wallet costs, XP and combat-active time requirements. Death demotes one level, both changes broadcast, earned permissions follow the current level, and rank items are awarded once. Rank 100 grants admin permissions and requires owner approval by default. `/quests` and `/jobs` offer configurable NPC objectives, daily quotas and atomic treasury-funded rewards. See [progression setup, commands, defaults and limitations](docs/PROGRESSION.md).
 
 ## 🎮 Two Economies Working Together
 

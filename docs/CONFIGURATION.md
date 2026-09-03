@@ -276,3 +276,7 @@ Ordinary death movements and admin adjustments commit their balance changes and 
 ## 1.2.0 event and blockchain settings
 
 `EventRewards`, `Transfers`, and `SecurityPortal` are shown in the example configuration. Defaults enable small off-chain event pools while leaving reserve spending and the PIN portal disabled. Transfer and portal changes require restart. See [event rules](EVENT_REWARDS.md) and [reserve/signer/PIN setup](BLOCKCHAIN_SETUP.md) before enabling transfers.
+
+## Progression and logging
+
+See [progression definitions](PROGRESSION.md) and [plugin log destination and rotation](LOGGING.md). Missing `Progression` uses the default 100-level ladder. To materialize those defaults in an existing config, back up first, then copy `Progression` from the example.

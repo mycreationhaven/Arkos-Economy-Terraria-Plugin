@@ -228,7 +228,7 @@ public sealed class BlockchainTransferService(EconomyDatabase db, EconomyService
         {
             try { await TickAsync(ct); }
             catch (OperationCanceledException) when (ct.IsCancellationRequested) { break; }
-            catch (Exception ex) { LastStatus = "Settlement pending: " + ex.GetType().Name; TShock.Log.ConsoleWarn("[ArkoviaEconomy] " + LastStatus); }
+            catch (Exception ex) { LastStatus = "Settlement pending: " + ex.GetType().Name; ArkoviaEconomy.Core.EconomyLog.Warn("[ArkoviaEconomy] " + LastStatus); }
             try { await Task.Delay(TimeSpan.FromSeconds(config().Transfers.PollSeconds), ct); }
             catch (OperationCanceledException) { break; }
         }
