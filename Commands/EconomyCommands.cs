@@ -78,7 +78,7 @@ public sealed class EconomyCommands
         };
 
         yield return new Command(
-            Permissions.TreasuryView,
+            new List<string> { Permissions.TreasuryView, Permissions.AdminTreasury },
             Treasury,
             "treasury")
         {
@@ -626,20 +626,15 @@ public sealed class EconomyCommands
             }
 
             args.Player.SendInfoMessage(
-                "Checking your on-chain ARKOS balance...");
+                $"Checking your on-chain {_config.Current.CurrencySymbol} balance...");
 
             var balanceAtomic =
                 await _node.GetAccountBalanceAtomicAsync(
                     wallet.AccountRS,
                     CancellationToken.None);
 
-            const decimal atomicPerArkos = 100000000m;
-
-            var balanceArkos =
-                balanceAtomic / atomicPerArkos;
-
             args.Player.SendSuccessMessage(
-                $"On-chain balance: {balanceArkos:0.00000000} ARKOS");
+                $"On-chain balance: {_config.Current.FormatBlockchain(balanceAtomic)}");
 
             args.Player.SendInfoMessage(
                 $"Wallet: {wallet.AccountRS}");
@@ -651,7 +646,7 @@ public sealed class EconomyCommands
                 $"{ex.Message}");
 
             args.Player.SendErrorMessage(
-                "Unable to retrieve your on-chain ARKOS balance.");
+                "Unable to retrieve your selected on-chain currency balance.");
         }
     }
 
@@ -955,11 +950,34 @@ public sealed class EconomyCommands
 
     private void Treasury(CommandArgs args)
     {
+        try
+        {
+            if (args.Parameters.Count > 0)
+            {
+                if (!args.Player.HasPermission(Permissions.AdminTreasury))
+                    throw new InvalidOperationException("Missing permission: " + Permissions.AdminTreasury);
+                if (args.Parameters.Count != 2 ||
+                    !(args.Parameters[0].Equals("add", StringComparison.OrdinalIgnoreCase) ||
+                      args.Parameters[0].Equals("take", StringComparison.OrdinalIgnoreCase)))
+                    throw new InvalidOperationException("Usage: /treasury [add|take <amount>]");
+                if (!TryAmount(args.Parameters[1], out var amount))
+                    throw new InvalidOperationException("Enter a positive amount within the supported range.");
+                var add = args.Parameters[0].Equals("add", StringComparison.OrdinalIgnoreCase);
+                _economy.AdminAdjust(_economy.GetTreasury(), add ? amount : -amount,
+                    add ? "Admin treasury addition" : "Admin treasury deduction", args.Player.Name);
+                args.Player.SendSuccessMessage("Treasury adjustment recorded (off-chain only).");
+            }
+        }
+        catch (Exception ex)
+        {
+            args.Player.SendErrorMessage(ex.Message);
+            return;
+        }
         var treasury = _economy.GetTreasury();
 
         args.Player.SendInfoMessage(
             $"Terraria Treasury: {_config.Current.Format(treasury.WalletAtomic)} | " +
-            $"Arkovia 5% source: {_config.Current.Arkovia.CommunityDevelopmentAccount}");
+            $"Arkovia funding source: {_config.Current.Arkovia.CommunityDevelopmentAccount}");
 
         args.Player.SendInfoMessage(
             $"Blockchain sync: {_sync.LastStatus} " +

@@ -1,3 +1,11 @@
+## 1.1.0 — Currency selection and treasury controls
+
+- Ordinary deaths transfer a configurable wallet percentage (default 25%) to the Terraria Treasury, preserving bank/protected balances and the separate PvP split.
+- Added permission-checked `/treasury add` and `/treasury take` with audited, atomic adjustments and overdraft protection.
+- Added node-validated `CurrencyId`, currency-aware balance/ledger queries, and independent blockchain-to-economy precision conversion.
+- Preserved stored balances with denomination guards, explicit currency-change acceptance, safe reload behavior, and scoped funding baselines.
+- Added SQLite and simulated-node regression coverage, including rollback on audit-write failure.
+
 # Changelog
 
 All notable changes to Arkovia Economy are documented here.

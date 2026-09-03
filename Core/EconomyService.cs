@@ -84,8 +84,9 @@ public sealed class EconomyService
             account = _db.GetAccountById(account.Id)!;
             var next = checked(account.WalletAtomic + deltaAtomic);
             if (next < 0) throw new InvalidOperationException("Adjustment would make the balance negative.");
-            _db.SetBalances(account.Id, next, account.BankAtomic);
-            _db.InsertTransaction(Guid.NewGuid().ToString("N"), deltaAtomic < 0 ? account.Id : null, deltaAtomic > 0 ? account.Id : null, Math.Abs(deltaAtomic), "admin_adjustment", "admin", "manual", reason, actor);
+            _db.CommitWalletMovement(new[] { (account.Id, account.WalletAtomic, next) },
+                deltaAtomic < 0 ? account.Id : null, deltaAtomic > 0 ? account.Id : null,
+                Math.Abs(deltaAtomic), "admin_adjustment", "admin", "manual", reason, actor);
         }
     }
 
@@ -185,6 +186,23 @@ public sealed class EconomyService
         }
     }
 
+    public long ApplyPercentageDeathLoss(EconomyAccount player, decimal percent,
+        long protectedBalanceAtomic, string referenceId, string actor)
+    {
+        if (percent is < 0 or > 100)
+            throw new InvalidOperationException("Death percentage must be 0-100.");
+        lock (_gate)
+        {
+            player = _db.GetAccountById(player.Id)
+                ?? throw new InvalidOperationException("Player account was not found.");
+            // Round down so fractional atomic units never increase the configured penalty.
+            var requested = checked((long)Math.Floor(player.WalletAtomic * percent / 100m));
+            return requested <= 0 ? 0 : ApplyGameplayLoss(player, requested,
+                protectedBalanceAtomic, "player_death", referenceId,
+                $"Death penalty ({percent}%) to Terraria Treasury", actor);
+        }
+    }
+
     public long ApplyGameplayLoss(
         EconomyAccount player,
         long requestedAtomic,
@@ -231,26 +249,13 @@ public sealed class EconomyService
                 ?? throw new InvalidOperationException(
                     "Treasury account was not found.");
 
-            _db.SetBalances(
-                player.Id,
-                player.WalletAtomic - actualLoss,
-                player.BankAtomic);
-
-            _db.SetBalances(
-                treasury.Id,
-                checked(treasury.WalletAtomic + actualLoss),
-                treasury.BankAtomic);
-
-            _db.InsertTransaction(
-                Guid.NewGuid().ToString("N"),
-                player.Id,
-                treasury.Id,
-                actualLoss,
-                "gameplay_loss",
-                eventType,
-                referenceId,
-                description,
-                actor);
+            var nextTreasuryBalance = checked(treasury.WalletAtomic + actualLoss);
+            _db.CommitWalletMovement(new[]
+                {
+                    (player.Id, player.WalletAtomic, player.WalletAtomic - actualLoss),
+                    (treasury.Id, treasury.WalletAtomic, nextTreasuryBalance)
+                }, player.Id, treasury.Id, actualLoss, "gameplay_loss",
+                eventType, referenceId, description, actor);
 
             return actualLoss;
         }

@@ -9,15 +9,40 @@ namespace ArkoviaEconomy.Integrations;
 
 public sealed class ArkoviaNodeClient : IDisposable
 {
-    private readonly HttpClient _http = new()
-    {
-        Timeout = TimeSpan.FromSeconds(15)
-    };
+    private readonly HttpClient _http;
 
     private readonly Func<EconomyConfig> _config;
 
-    public ArkoviaNodeClient(Func<EconomyConfig> config)
-        => _config = config;
+    public ArkoviaNodeClient(Func<EconomyConfig> config, HttpMessageHandler? handler = null)
+    {
+        _config = config;
+        _http = handler is null ? new HttpClient() : new HttpClient(handler);
+        _http.Timeout = TimeSpan.FromSeconds(15);
+    }
+
+    public async Task ValidateCurrencyAsync(CancellationToken ct)
+    {
+        var cfg = _config();
+        if (cfg.CurrencyId.Length == 0)
+        {
+            cfg.BlockchainDecimals = 8;
+            return;
+        }
+        var root = await GetAsync(new Dictionary<string, string>
+        {
+            ["requestType"] = "getCurrency", ["currency"] = cfg.CurrencyId
+        }, ct);
+        var name = root.Value<string>("name");
+        var code = root.Value<string>("code");
+        var decimals = root.Value<int?>("decimals");
+        if (root.Value<string>("currency") != cfg.CurrencyId ||
+            string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(code) ||
+            decimals is null or < 0 or > 8)
+            throw new InvalidOperationException("Node returned invalid currency metadata. Economy startup cancelled.");
+        cfg.CurrencyName = name;
+        cfg.CurrencySymbol = code;
+        cfg.BlockchainDecimals = decimals.Value;
+    }
 
     public async Task<int> GetHeightAsync(CancellationToken ct)
     {
@@ -36,19 +61,19 @@ public sealed class ArkoviaNodeClient : IDisposable
     public async Task<IReadOnlyList<BlockchainFundingEntry>>
         GetTreasuryLedgerAsync(CancellationToken ct)
     {
+        var currencyId = _config().CurrencyId;
         var cfg = _config().Arkovia;
-
-        var root = await GetAsync(
-            new Dictionary<string, string>
-            {
-                ["requestType"] = "getAccountLedger",
-                ["account"] = cfg.CommunityDevelopmentAccount,
-                ["eventType"] = cfg.ExpectedLedgerEventType,
-                ["holdingType"] = "NXT_BALANCE",
-                ["firstIndex"] = "0",
-                ["lastIndex"] = (cfg.LedgerPageSize - 1).ToString()
-            },
-            ct);
+        var parameters = new Dictionary<string, string>
+        {
+            ["requestType"] = "getAccountLedger",
+            ["account"] = cfg.CommunityDevelopmentAccount,
+            ["eventType"] = _config().FundingEventType,
+            ["holdingType"] = currencyId.Length == 0 ? "NXT_BALANCE" : "CURRENCY_BALANCE",
+            ["firstIndex"] = "0",
+            ["lastIndex"] = (cfg.LedgerPageSize - 1).ToString()
+        };
+        if (currencyId.Length > 0) parameters["holding"] = currencyId;
+        var root = await GetAsync(parameters, ct);
 
         if (root["entries"] is not JArray entries)
             return Array.Empty<BlockchainFundingEntry>();
@@ -57,6 +82,11 @@ public sealed class ArkoviaNodeClient : IDisposable
 
         foreach (var token in entries.OfType<JObject>())
         {
+            // Never trust a node to honor holding filters before crediting money.
+            var expectedHolding = currencyId.Length == 0 ? "NXT_BALANCE" : "CURRENCY_BALANCE";
+            if (token.Value<string>("holdingType") != expectedHolding ||
+                (currencyId.Length > 0 && token.Value<string>("holding") != currencyId))
+                continue;
             var eventType = token.Value<string>("eventType") ?? "";
             var eventId = token.Value<string>("event") ?? "";
             var block = token.Value<string>("block") ?? eventId;
@@ -68,6 +98,8 @@ public sealed class ArkoviaNodeClient : IDisposable
             var externalKey =
                 $"arkovia:{cfg.CommunityDevelopmentAccount}:{block}:{eventId}:{change}";
 
+            if (currencyId.Length > 0)
+                externalKey = $"currency:{currencyId}:" + externalKey;
             list.Add(new BlockchainFundingEntry(
                 externalKey,
                 eventId,
@@ -82,24 +114,8 @@ public sealed class ArkoviaNodeClient : IDisposable
         return list;
     }
 
-    public async Task<long> GetAccountBalanceAtomicAsync(
-        CancellationToken ct)
-    {
-        var cfg = _config().Arkovia;
-
-        var root = await GetAsync(
-            new Dictionary<string, string>
-            {
-                ["requestType"] = "getBalance",
-                ["account"] = cfg.CommunityDevelopmentAccount
-            },
-            ct);
-
-        return ParseLong(
-            root["balanceNQT"] ??
-            root["balanceATM"] ??
-            root["balance"]);
-    }
+    public Task<long> GetAccountBalanceAtomicAsync(CancellationToken ct)
+        => GetAccountBalanceAtomicAsync(_config().Arkovia.CommunityDevelopmentAccount, ct);
 
     public async Task<long> GetAccountBalanceAtomicAsync(
         string account,
@@ -112,6 +128,21 @@ public sealed class ArkoviaNodeClient : IDisposable
 
         try
         {
+            var currencyId = _config().CurrencyId;
+            if (currencyId.Length > 0)
+            {
+                var currency = await GetAsync(new Dictionary<string, string>
+                {
+                    ["requestType"] = "getAccountCurrencies",
+                    ["account"] = account,
+                    ["currency"] = currencyId
+                }, ct);
+                // Nxt returns an empty object when the account holds none of this currency.
+                if (!currency.HasValues) return 0;
+                if (currency.Value<string>("currency") != currencyId)
+                    throw new InvalidOperationException("Node returned a different currency balance.");
+                return ParseLong(currency["units"]);
+            }
             var root = await GetAsync(
                 new Dictionary<string, string>
                 {
@@ -293,7 +324,7 @@ public sealed class ArkoviaNodeClient : IDisposable
             token?.ToString(),
             out var value)
             ? value
-            : 0;
+            : throw new InvalidOperationException("Node response contains a missing or invalid atomic amount.");
 
     public void Dispose()
         => _http.Dispose();

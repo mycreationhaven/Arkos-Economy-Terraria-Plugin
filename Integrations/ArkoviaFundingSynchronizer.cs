@@ -14,6 +14,7 @@ public sealed class ArkoviaFundingSynchronizer : IDisposable
     private readonly Func<EconomyConfig> _config;
     private CancellationTokenSource? _cts;
     private Task? _loop;
+    private readonly SemaphoreSlim _syncGate = new(1, 1);
     public DateTime? LastSuccessUtc { get; private set; }
     public string LastStatus { get; private set; } = "Not started";
 
@@ -29,6 +30,13 @@ public sealed class ArkoviaFundingSynchronizer : IDisposable
 
     public async Task<int> SyncOnceAsync(CancellationToken ct = default)
     {
+        await _syncGate.WaitAsync(ct);
+        try { return await SyncCoreAsync(ct); }
+        finally { _syncGate.Release(); }
+    }
+
+    private async Task<int> SyncCoreAsync(CancellationToken ct)
+    {
         var cfg = _config();
         if (!cfg.Arkovia.Enabled) { LastStatus = "Arkovia integration disabled"; return 0; }
         var height = await _client.GetHeightAsync(ct);
@@ -38,7 +46,7 @@ public sealed class ArkoviaFundingSynchronizer : IDisposable
         foreach (var e in entries.OrderBy(x => x.Height))
         {
             if (e.Height < cfg.Arkovia.FeeDistributionActivationHeight) continue;
-            if (!e.EventType.Equals(cfg.Arkovia.ExpectedLedgerEventType, StringComparison.OrdinalIgnoreCase)) continue;
+            if (!e.EventType.Equals(cfg.FundingEventType, StringComparison.OrdinalIgnoreCase)) continue;
             if (cfg.Arkovia.CreditOnlyPositiveLedgerChanges && e.ChangeAtomic <= 0) continue;
 
             var confirmations = height - e.Height + 1;
@@ -47,7 +55,7 @@ public sealed class ArkoviaFundingSynchronizer : IDisposable
 
             var gameAtomic = checked(
                 (long)Math.Floor(
-                    e.ChangeAtomic *
+                    cfg.BlockchainToAtomic(e.ChangeAtomic) *
                     cfg.Arkovia.GameAllocationPercent /
                     100m));
 
@@ -59,7 +67,7 @@ public sealed class ArkoviaFundingSynchronizer : IDisposable
                     gameAtomic,
                     "funding:" + e.ExternalKey,
                     e.EventId,
-                    $"Confirmed Arkovia 5% fee distribution at height {e.Height} ({confirmations} confirmations)");
+                    $"Confirmed Arkovia currency funding at height {e.Height} ({confirmations} confirmations)");
 
                 credited++;
             }
@@ -74,8 +82,17 @@ public sealed class ArkoviaFundingSynchronizer : IDisposable
         // Only future positive growth is eligible for Terraria funding.
         if (entries.Count == 0)
         {
-            const string baselineKey =
-                "arkovia.treasury_balance_baseline_atomic";
+            var scope = cfg.CurrencyId.Length == 0 ? "native" : cfg.CurrencyId;
+            var source = cfg.Arkovia.CommunityDevelopmentAccount;
+            var baselineKey = $"arkovia.balance:{scope}:{source}";
+            // Carry forward the old native high-water mark once on upgrade.
+            if (cfg.CurrencyId.Length == 0 && _db.GetState(baselineKey) is null &&
+                _db.GetState("arkovia.legacy_baseline_migrated") is null &&
+                _db.GetState("arkovia.treasury_balance_baseline_atomic") is string legacy)
+            {
+                _db.SetState(baselineKey, legacy);
+                _db.SetState("arkovia.legacy_baseline_migrated", source);
+            }
 
             var currentBalance =
                 await _client.GetAccountBalanceAtomicAsync(ct);
@@ -121,14 +138,14 @@ public sealed class ArkoviaFundingSynchronizer : IDisposable
                 var gameAtomic =
                     checked(
                         (long)Math.Floor(
-                            positiveDelta *
+                            cfg.BlockchainToAtomic(positiveDelta) *
                             cfg.Arkovia.GameAllocationPercent /
                             100m));
 
                 if (gameAtomic > 0)
                 {
                     var externalId =
-                        $"funding:balance-delta:{previousBalance}:{currentBalance}";
+                        $"funding:balance-delta:{scope}:{source}:{previousBalance}:{currentBalance}";
 
                     _economy.CreditTreasury(
                         gameAtomic,
