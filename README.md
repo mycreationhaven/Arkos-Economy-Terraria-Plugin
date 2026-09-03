@@ -473,7 +473,7 @@ One selected quest and one job can progress together. This release supports conf
 
 ## ⛓️ Player Blockchain Commands
 
-The `/arkos` command family manages the players Arkovia blockchain identity.
+All `/arkos` commands require a logged-in TShock account and `arkoviaeconomy.wallet`. The wallet belongs to that TShock account, not the character name. Additional permissions are listed below.
 
 ```text
 /arkos balance
@@ -485,35 +485,98 @@ The `/arkos` command family manages the players Arkovia blockchain identity.
 /arkos security
 /arkos pin
 /arkos withdraw
+/arkos transfers
 ```
 
-Transfers and the private PIN/withdrawal portal require operator configuration. Never include a PIN in Terraria commands; use the private HTTPS portal. See [blockchain setup](docs/BLOCKCHAIN_SETUP.md).
+These commands use the server's configured currency: native ARKOS when `CurrencyId` is blank, or the configured custom Arkovia currency. `/balance` shows your **off-chain gameplay Wallet and Bank**; `/arkos balance` shows your **linked blockchain account's balance**.
 
 ### `/arkos balance`
 
-Queries the real on-chain balance of the players linked Arkovia wallet.
+Queries the Arkovia node for the selected currency balance of your linked blockchain wallet and displays its public address. This is a balance lookup: it does not deposit, withdraw or change your gameplay balance. Create a linked wallet first with `/arkos wallet create`. A reachable configured node is required.
 
 ### `/arkos wallet create`
 
-Creates an Arkovia blockchain wallet and links its public identity to the authenticated TShock account.
+Creates a new Arkovia blockchain wallet and links its public address, account ID and public key to your TShock account. An existing linked wallet is not replaced. This command does not import an external wallet or transfer your gameplay Wallet/Bank funds.
 
-Wallet creation uses the protected recovery workflow for the private recovery secret.
+The private recovery material is handled through the protected recovery workflow. If the recovery service is available, creation provides a secure recovery claim; if it is unavailable, the protected recovery file is retained for later recovery. Follow the claim instructions and keep your recovered secret private.
+
+A starter blockchain grant is optional: it is queued only when the server has enabled/configured starter grants and you have `arkoviaeconomy.blockchain.starter` at creation. Creating a wallet does not guarantee immediate funding.
 
 ### `/arkos wallet address`
 
-Displays the players public Arkovia address and account ID.
-
-Public blockchain addresses are safe to share. Recovery secrets and private keys are not.
+Displays your linked wallet's public `ARK-...` address and numeric account ID. These identify your blockchain account; they are not private keys. Use this to check the linked account before transferring funds. For a gameplay deposit, the destination is the **server reserve shown by `/arkos deposit`**, not your own address.
 
 ### `/arkos wallet status`
 
-Shows whether an Arkovia wallet has been created and displays its public wallet information.
+Reports whether your linked wallet has been created. For an existing wallet, it also shows the public address, numeric account ID and creation time. It does not query your blockchain balance or show transaction confirmations; use `/arkos balance` and `/arkos transfers` for those respective views.
 
 ### `/arkos wallet recovery`
 
-Requests a new secure recovery claim when the servers wallet-recovery infrastructure is available.
+Requests a new secure recovery claim for an existing linked wallet using an available, unclaimed protected recovery package. Use this when the original claim was unavailable or you need a new claim while the package still exists.
 
-This command should never require the player to type the wallets existing recovery secret into Terraria chat.
+This requires the server's recovery infrastructure. If the package has already been claimed or is no longer available, the command cannot recreate your recovery secret. It does not reset a forgotten transaction PIN. Never type your wallet secret phrase or private key into Terraria chat.
+
+### `/arkos deposit [transaction-full-hash]`
+
+**Additional permission:** `arkoviaeconomy.blockchain.deposit`. The operator must enable and configure blockchain transfers before you send funds.
+
+With no argument, `/arkos deposit` displays the configured server reserve and deposit instructions. It does not send a transaction or credit money by itself.
+
+To deposit:
+
+1. Run `/arkos deposit` and confirm that the administrator has enabled deposits and configured the displayed reserve.
+2. In your Arkovia wallet application, send the server's selected currency **from your linked blockchain account to that reserve account**.
+3. Wait for the server's required confirmation depth, then copy the transaction's full hash (64 hexadecimal characters, not its numeric transaction ID).
+4. Run `/arkos deposit <transaction-full-hash>`, replacing the placeholder with that hash. Do not type the brackets.
+5. On successful verification, the amount is credited to your off-chain gameplay **Wallet**. Check it with `/balance`.
+
+The plugin verifies the sender, destination, currency, amount and confirmations against its node. It does not automatically discover deposits. If a transaction is awaiting confirmations, retry the same hash later; a previously credited hash cannot credit your Wallet twice. `/bank deposit` is a separate command that moves gameplay Wallet funds into gameplay Bank savings.
+
+### `/arkos security`
+
+**Additional permission:** `arkoviaeconomy.security`. Requires the operator-configured HTTPS security portal.
+
+Sends you a private, short-lived link to the PIN and withdrawal page. Open it in your browser and remain logged into Terraria with the same authorized account. Keep the link private. Generating another link invalidates your earlier link; if it expires, run the command again.
+
+This command only opens access to the portal. It does not change your PIN or initiate a withdrawal by itself. The portal's withdrawals also require transfer configuration and `arkoviaeconomy.blockchain.withdraw`.
+
+### `/arkos pin`
+
+**Additional permission:** `arkoviaeconomy.security`. This is an alias for `/arkos security`: it opens the same private portal, not a separate chat-based PIN command.
+
+On the page, set a **6–12 digit transaction PIN**. To change an existing PIN, supply the current PIN and the new PIN on that page. The PIN authorizes withdrawals; it is separate from your TShock password and blockchain recovery secret. Five failed PIN verifications cause a 15-minute lockout. This version does not include a forgotten-PIN recovery interface.
+
+Use `/arkos pin` with no arguments. Never enter a PIN as `/arkos pin 123456` or send it in chat.
+
+### `/arkos withdraw`
+
+**Additional permissions:** `arkoviaeconomy.security` to open the page and `arkoviaeconomy.blockchain.withdraw` to request/confirm a withdrawal. Requires a linked wallet, configured transfers, a funded server reserve, the signing service and the HTTPS portal.
+
+This is another alias for `/arkos security`. Run it **without an amount, address or PIN**; it opens the page and does not immediately deduct funds.
+
+To withdraw:
+
+1. Open the private link and set your transaction PIN if needed.
+2. Enter a positive amount in the selected currency and your PIN on the page.
+3. Click **Review withdrawal**. Check the amount, destination account and actual network fee. The destination is your linked blockchain wallet; arbitrary destination addresses are not supported.
+4. Click **Confirm withdrawal** before the two-minute quote expires. Request a new quote if it expires.
+5. After successful confirmation, the gameplay Wallet amount is deducted and held for the outgoing blockchain payment. The background worker broadcasts it and checks confirmations. Use `/arkos transfers` to inspect progress.
+
+The server enforces withdrawal minimum/maximum amounts, daily limits, available Wallet funds, reserve coverage and currency precision. Network fees are paid by the server reserve in native ARKOS. The gameplay Bank is not deducted; move savings to Wallet with `/bank withdraw <amount>` first if needed.
+
+A pending payment is not an immediate failure or automatic refund. If its status remains unresolved, ask an administrator to inspect it before trying another withdrawal.
+
+### `/arkos transfers`
+
+Shows your ten most recent withdrawal and starter-grant records, including operation ID, status, amount and full hash when available. It requires the base `arkoviaeconomy.wallet` permission; it is not a deposit-history command.
+
+- `Queued`: a starter grant is waiting to be prepared.
+- `Held`: a signed outgoing payment is recorded and awaiting broadcast or confirmation; a withdrawal's gameplay funds have been reserved.
+- `Confirmed`: the node reports the required confirmations.
+- `Refunded`: an administrator reconciled an expired, absent withdrawal and returned its gameplay funds.
+- `Expired`: an administrator reconciled an expired, absent starter grant.
+
+Operators: follow [blockchain, signer and PIN portal setup](docs/BLOCKCHAIN_SETUP.md). Installing the DLL alone does not enable transfers or configure the portal/recovery infrastructure.
 
 ---
 
