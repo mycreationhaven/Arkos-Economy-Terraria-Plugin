@@ -6,12 +6,13 @@
     <LangVersion>latest</LangVersion>
     <AssemblyName>ArkoviaEconomy</AssemblyName>
     <RootNamespace>ArkoviaEconomy</RootNamespace>
-    <Version>1.1.0</Version>
+    <Version>1.2.0-rc.1</Version>
     <Authors>My Creation Haven</Authors>
     <Description>Comprehensive treasury-backed Arkovia economy framework for TShock/Terraria.</Description>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Remove="tests/**/*.cs" />
+    <EmbeddedResource Include="Security/portal.html" />
+    <Compile Remove="tests/**/*.cs;services/**/*.cs" />
     <PackageReference Include="TShock" Version="6.1.0" />
   </ItemGroup>
 </Project>

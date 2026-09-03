@@ -1,3 +1,11 @@
+## 1.2.0-rc.1 — Events and blockchain settlement
+
+- Fixed DD2 victory-hook ordering and limited contribution to event enemies.
+- Added durable, atomic multiplayer pools and eight additional event families.
+- Added confirmed full-hash deposits, signed-byte withdrawal retries, reserve/fee limits, and guarded expiry refunds.
+- Added a separate local signer, private HTTPS PIN portal, persistent PIN lockouts, and one-time permission-controlled starter grants.
+- Added deployment/configuration guides and regression coverage. Blockchain features remain disabled until configured; live Terraria/node and MySQL staging remain required.
+
 ## 1.1.0 — Currency selection and treasury controls
 
 - Ordinary deaths transfer a configurable wallet percentage (default 25%) to the Terraria Treasury, preserving bank/protected balances and the separate PvP split.

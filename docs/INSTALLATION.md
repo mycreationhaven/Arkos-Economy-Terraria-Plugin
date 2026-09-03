@@ -339,3 +339,7 @@ If the plugin does not behave as expected, check:
 - server logs for plugin errors
 
 Never troubleshoot by posting private recovery material or production credentials publicly.
+
+## 1.2.0 release candidate
+
+Replace the DLL while the server is stopped after backing up the database. The new ArkoviaOperations table is added without rescaling balances. Configure off-chain event pools through EventRewards. Blockchain transfers require a separate signer process and HTTPS PIN portal; follow [BLOCKCHAIN_SETUP.md](BLOCKCHAIN_SETUP.md). Test staged deposits, withdrawals, interrupted submission recovery, DD2, and the other events before enabling them for players.

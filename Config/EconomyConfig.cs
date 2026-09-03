@@ -5,6 +5,10 @@ namespace ArkoviaEconomy.Config;
 public sealed class EconomyConfig
 {
     // Off-chain Decimals is independent of node currency decimals and never auto-rescaled.
+    public BlockchainTransferConfig Transfers { get; set; } = new();
+    public SecurityPortalConfig SecurityPortal { get; set; } = new();
+    public EventRewardsConfig EventRewards { get; set; } = new();
+
     public string CurrencyId { get; set; } = "";
     public bool AcceptExistingBalancesForCurrencyChange { get; set; } = false;
     [JsonIgnore]
@@ -14,6 +18,20 @@ public sealed class EconomyConfig
     public int BlockchainDecimals { get; set; } = 8;
     public long BlockchainToAtomic(long units) => checked((long)Math.Floor(
         units * (decimal)AtomicUnit / Pow10(BlockchainDecimals)));
+    public long AtomicToBlockchainExact(long atomic)
+    {
+        var units = atomic * (decimal)Pow10(BlockchainDecimals) / AtomicUnit;
+        if (units <= 0 || units != decimal.Truncate(units))
+            throw new InvalidOperationException("Amount cannot be represented at the blockchain currency precision.");
+        return checked((long)units);
+    }
+    public long BlockchainToAtomicExact(long units)
+    {
+        var atomic = units * (decimal)AtomicUnit / Pow10(BlockchainDecimals);
+        if (atomic <= 0 || atomic != decimal.Truncate(atomic))
+            throw new InvalidOperationException("Deposit cannot be represented at the economy precision.");
+        return checked((long)atomic);
+    }
     public string FormatBlockchain(long units) =>
         $"{units / (decimal)Pow10(BlockchainDecimals):0.########} {CurrencySymbol}";
 

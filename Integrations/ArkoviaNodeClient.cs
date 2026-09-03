@@ -7,7 +7,7 @@ using ArkoviaEconomy.Models;
 
 namespace ArkoviaEconomy.Integrations;
 
-public sealed class ArkoviaNodeClient : IDisposable
+public sealed partial class ArkoviaNodeClient : IDisposable
 {
     private readonly HttpClient _http;
 
@@ -263,8 +263,7 @@ public sealed class ArkoviaNodeClient : IDisposable
                 root["errorDescription"]?.ToString()
                 ?? "Unknown Arkovia node error.";
 
-            throw new InvalidOperationException(
-                $"Arkovia node error {code}: {description}");
+            throw new ArkoviaNodeException(code, description);
         }
 
         return root;

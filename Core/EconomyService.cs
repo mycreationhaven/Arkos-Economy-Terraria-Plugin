@@ -5,7 +5,7 @@ using TShockAPI;
 
 namespace ArkoviaEconomy.Core;
 
-public sealed class EconomyService
+public sealed partial class EconomyService
 {
     public const string TreasuryName = "Terraria Treasury";
     private readonly EconomyDatabase _db;

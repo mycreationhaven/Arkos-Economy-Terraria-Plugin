@@ -51,3 +51,6 @@ ServerPlugins/*
 *.v1-backup.md
 *.v1-backup.json
 *.pre-arkos-name-fix
+
+signer-dist/
+__pycache__/
