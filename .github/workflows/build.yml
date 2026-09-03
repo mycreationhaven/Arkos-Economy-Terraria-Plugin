@@ -12,6 +12,7 @@ jobs:
           dotnet-version: '9.0.x'
       - run: dotnet build -c Release
       - run: dotnet run --project tests/ArkoviaEconomy.Tests.csproj -c Release
+      - run: node tests/portal_ui_smoke.js
       - run: dotnet build services/ArkoviaSigner/ArkoviaSigner.csproj -c Release
       - run: python3 tests/signer_smoke.py
       - run: dotnet publish services/ArkoviaSigner/ArkoviaSigner.csproj -c Release -o signer-dist

@@ -157,6 +157,7 @@ Equal(0, await sync.SyncOnceAsync());
 Equal(preFunding + cfg.ToAtomic(1.23m), economy.GetTreasury().WalletAtomic);
 checks += await SettlementTests.RunAsync();
 checks += ProgressionTests.Run();
+checks += PortalCodeTests.Run();
 connection.Close();
 SqliteConnection.ClearAllPools();
 File.Delete(databasePath);

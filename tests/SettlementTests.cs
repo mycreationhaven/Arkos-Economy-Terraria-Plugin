@@ -177,7 +177,23 @@ static class SettlementTests
         Check(page.IsSuccessStatusCode && page.Headers.Contains("Content-Security-Policy"));
         var html = await page.Content.ReadAsStringAsync();
         Check(html.Contains("Review withdrawal") && !html.Contains("NONCE_VALUE"));
-        var token = portal.CreateLink(12).Split('#')[1];
+        async Task<string> Login(string code, string account = "Ben", string origin = "https://example.invalid")
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Post, cfg.SecurityPortal.ListenUrl + "api");
+            request.Headers.Add("Origin", origin);
+            request.Content = new StringContent(Newtonsoft.Json.JsonConvert.SerializeObject(new { action="login", account, code }), Encoding.UTF8, "application/json");
+            using var response = await client.SendAsync(request);
+            var result = JObject.Parse(await response.Content.ReadAsStringAsync());
+            if (!response.IsSuccessStatusCode) throw new InvalidOperationException(result.Value<string>("error"));
+            return result.Value<string>("token")!;
+        }
+        var code = portal.CreateAccessCode(12, "Ben");
+        Check(code.Length == 6 && code.All(char.IsDigit));
+        await RejectAsync(() => Login(code, "Ben", "https://wrong.invalid"));
+        await RejectAsync(() => Login(code, "OtherAccount"));
+        var token = await Login(code);
+        Check(token.Length == 64 && !html.Contains("location.hash.slice"));
+        await RejectAsync(() => Login(code));
         async Task<HttpStatusCode> Post(string bearer, string origin, string json)
         {
             using var request = new HttpRequestMessage(HttpMethod.Post, cfg.SecurityPortal.ListenUrl + "api");
@@ -188,7 +204,7 @@ static class SettlementTests
         Check(await Post(token, "https://wrong.invalid", "{\"action\":\"status\"}") == HttpStatusCode.BadRequest);
         Check(await Post(token, "https://example.invalid", "{\"action\":\"setPin\",\"newPin\":\"847296\"}") == HttpStatusCode.OK);
         Check(pins.IsSet(12));
-        var replacement = portal.CreateLink(12).Split('#')[1];
+        var replacement = await Login(portal.CreateAccessCode(12, "Ben"));
         Check(await Post(token, "https://example.invalid", "{\"action\":\"status\"}") == HttpStatusCode.BadRequest);
         permitted = false;
         Check(await Post(replacement, "https://example.invalid", "{\"action\":\"status\"}") == HttpStatusCode.BadRequest);

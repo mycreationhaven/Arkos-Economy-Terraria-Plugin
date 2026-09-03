@@ -37,3 +37,7 @@ The plugin compiles against TShock 6.1.0. Live spawn/kill/death hooks, rank broa
 ## 1.3.1-rc.1 startup fix
 
 162 .NET regression checks pass, including nine added config-loading checks. A full default config save/reload reproduced the reported startup exception before the fix. Tests now cover full round-trip loading, fresh-process loading, custom rank costs, replacement job lists, empty quest lists, repeated reload, legacy missing defaults, and rejection of actual duplicate ranks while retaining active config. Signer code is unchanged.
+
+## 1.3.2-rc.1 six-digit access codes
+
+184 .NET checks pass, including real loopback HTTP code exchange with origin and account validation, replay rejection, permission revocation and PIN setup. Dedicated access-code checks cover format, expiry, account binding, five-failure invalidation, global throttling and concurrent one-use redemption. Twelve browser-script checks cover sign-in, hiding/clearing credentials, request headers, quote/confirm buttons and session-expiry recovery; JavaScript syntax also checks successfully. No actual blockchain payments were made. Live browser/Nginx/TShock staging remains required.

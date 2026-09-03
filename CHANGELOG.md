@@ -1,3 +1,10 @@
+# 1.3.2-rc.1
+
+- Replace long portal login links with account-bound, six-digit one-time codes, expiry and guessing limits.
+- Keep strong bearer sessions inside the browser and preserve transaction PIN requirements.
+- Add portal sign-in UI and empty transfer-history feedback.
+- Retain the progression config loading fix from 1.3.1.
+
 # 1.3.1-rc.1
 
 - Fix JSON deserialization appending saved progression lists to defaults, causing valid 100-rank configurations to abort startup.

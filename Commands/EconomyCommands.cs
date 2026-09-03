@@ -156,8 +156,10 @@ public sealed class EconomyCommands
                 case "withdraw":
                     if (args.Parameters.Count != 1) throw new InvalidOperationException("Use /arkos security. Enter your PIN and withdrawal amount only on the secure page.");
                     if (!args.Player.HasPermission(Permissions.Security)) throw new InvalidOperationException("Missing permission: " + Permissions.Security);
-                    args.Player.SendInfoMessage("Private security link (expires in a few minutes; keep Terraria logged in):");
-                    args.Player.SendInfoMessage(_portal.CreateLink(RequireTShockUserId(args)));
+                    var accessCode = _portal.CreateAccessCode(RequireTShockUserId(args), args.Player.Account.Name);
+                    args.Player.SendInfoMessage("Open: " + _config.Current.SecurityPortal.PublicUrl);
+                    args.Player.SendInfoMessage($"Account: {args.Player.Account.Name} | Access code: {accessCode}");
+                    args.Player.SendInfoMessage($"Code expires in {_config.Current.SecurityPortal.SessionMinutes} minutes. Use once, keep private, and stay logged in.");
                     break;
                 case "deposit":
                     if (!args.Player.HasPermission(Permissions.BlockchainDeposit)) throw new InvalidOperationException("Missing deposit permission.");
@@ -182,7 +184,9 @@ public sealed class EconomyCommands
                     break;
                 case "transfers":
                     var userId = RequireTShockUserId(args);
-                    foreach (var op in _db.Operations("withdrawal", userId).Concat(_db.Operations("grant", userId)).OrderByDescending(o => o.CreatedUtc).Take(10))
+                    var recentTransfers = _db.Operations("withdrawal", userId).Concat(_db.Operations("grant", userId)).OrderByDescending(o => o.CreatedUtc).Take(10).ToList();
+                    if (recentTransfers.Count == 0) args.Player.SendInfoMessage("No withdrawals or starter grants recorded yet.");
+                    foreach (var op in recentTransfers)
                         args.Player.SendInfoMessage($"{op.Id}: {op.Status}, {_config.Current.Format(op.Atomic)}, full hash: {op.FullHash}");
                     break;
                 case "wallet":

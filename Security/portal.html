@@ -1,12 +1,40 @@
-<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Arkovia secure transactions</title>
-<style nonce="NONCE_VALUE">body{font:17px system-ui;background:#101929;color:#f4f5f8;margin:0}main{max-width:620px;margin:40px auto;padding:24px}section{background:#1c2940;border-radius:14px;padding:24px;margin:20px 0}label{display:block;margin-top:16px}input,button{font:inherit;padding:12px;border-radius:7px;box-sizing:border-box;width:100%;margin-top:8px}button{background:#e7bf64;color:#142036;border:0;cursor:pointer}button:disabled{opacity:.5}p{line-height:1.55}#result{white-space:pre-wrap;overflow-wrap:anywhere}small{color:#c6cfdf}</style>
-<main><h1>Arkovia secure transactions</h1><p id="identity">Connecting…</p><small>Enter your transaction PIN here. Your wallet recovery phrase is never needed.</small>
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Arkovia secure transactions</title>
+<style nonce="NONCE_VALUE">body{font:17px system-ui;background:#101929;color:#f4f5f8;margin:0}main{max-width:620px;margin:40px auto;padding:24px}section{background:#1c2940;border-radius:14px;padding:24px;margin:20px 0}label{display:block;margin-top:16px}input,button{font:inherit;padding:12px;border-radius:7px;box-sizing:border-box;width:100%;margin-top:8px}button{background:#e7bf64;color:#142036;border:0;cursor:pointer}button:disabled{opacity:.5}p{line-height:1.55}#result{white-space:pre-wrap;overflow-wrap:anywhere}small{color:#c6cfdf}[hidden]{display:none!important}</style>
+<main><h1>Arkovia secure transactions</h1><p id="identity">Sign in using your in-game access code.</p>
+<section id="access"><h2>Enter your six-digit code</h2><p>Run <strong>/arkos security</strong> in Terraria. Enter the account name shown beside your code and stay logged into the game. Each code works once.</p>
+<form id="loginForm"><label>TShock account name<input id="account" maxlength="128" autocomplete="username" required></label><label>Access code<input id="code" type="text" inputmode="numeric" pattern="[0-9]{6}" minlength="6" maxlength="6" autocomplete="one-time-code" required></label><button id="login">Continue</button></form><small>This access code is separate from your transaction PIN. Never enter your wallet recovery phrase here.</small></section>
+<div id="transactions" hidden>
 <section><h2>Set or change PIN</h2><label>Current PIN (only when changing)<input id="oldPin" type="password" inputmode="numeric" maxlength="12" autocomplete="off"></label><label>New PIN (6–12 digits)<input id="newPin" type="password" inputmode="numeric" minlength="6" maxlength="12" autocomplete="new-password"></label><button id="savePin">Save PIN</button></section>
-<section><h2>Withdraw to your linked wallet</h2><label>Amount<input id="amount" inputmode="decimal" autocomplete="off"></label><label>Transaction PIN<input id="pin" type="password" inputmode="numeric" maxlength="12" autocomplete="off"></label><button id="quote">Review withdrawal</button><button id="confirm" disabled>Confirm withdrawal</button></section><p id="result" role="status" aria-live="polite"></p></main>
+<section><h2>Withdraw to your linked wallet</h2><label>Amount<input id="amount" inputmode="decimal" autocomplete="off"></label><label>Transaction PIN<input id="pin" type="password" inputmode="numeric" maxlength="12" autocomplete="off"></label><button id="quote">Review withdrawal</button><button id="confirm" disabled>Confirm withdrawal</button></section>
+</div><p id="result" role="status" aria-live="polite"></p></main>
 <script nonce="NONCE_VALUE">
-const token=location.hash.slice(1);history.replaceState(null,'',location.pathname);const el=id=>document.getElementById(id);let busy=false;
-async function call(action,data={}){if(busy)return;busy=true;document.querySelectorAll('button').forEach(b=>b.disabled=true);try{const res=await fetch(new URL('api',location.href),{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({action,...data}),credentials:'omit'});const result=await res.json();if(!res.ok||result.error)throw Error(result.error||'Request failed');return result;}finally{busy=false;el('savePin').disabled=false;el('quote').disabled=false;}}
-async function act(action,data){try{const r=await call(action,data);if(r)el('result').textContent=r.message;el('confirm').disabled=action!=='quote';}catch(e){el('result').textContent=e.message;el('confirm').disabled=true;}finally{el('oldPin').value='';el('newPin').value='';if(action==='confirm')el('pin').value='';}}
-el('savePin').onclick=()=>act('setPin',{newPin:el('newPin').value,oldPin:el('oldPin').value});el('quote').onclick=()=>act('quote',{amount:el('amount').value,pin:el('pin').value});el('confirm').onclick=()=>act('confirm',{pin:el('pin').value});
-call('status').then(r=>{el('identity').textContent=(r.wallet||'No linked wallet')+' · '+r.currency;el('result').textContent=(r.pinSet?'PIN is configured. ':'Set your PIN to begin. ')+r.message;}).catch(e=>el('result').textContent=e.message);
+const el=id=>document.getElementById(id);let token='',busy=false,hasQuote=false;
+// Retire old fragment links without reading or using their credentials.
+if(location.hash)history.replaceState(null,'',location.pathname);
+function buttons(){document.querySelectorAll('button').forEach(b=>b.disabled=busy);el('confirm').disabled=busy||!hasQuote;}
+function signOut(){token='';hasQuote=false;el('transactions').hidden=true;el('access').hidden=false;el('pin').value='';el('oldPin').value='';el('newPin').value='';}
+async function call(action,data={}){
+ if(busy)throw Error('A request is already in progress.');busy=true;buttons();
+ try{
+  const headers={'Content-Type':'application/json'};if(token)headers.Authorization='Bearer '+token;
+  const res=await fetch(new URL('api',location.href),{method:'POST',headers,body:JSON.stringify({action,...data}),credentials:'omit',cache:'no-store'});
+  const result=await res.json();
+  if(!res.ok||result.error){if(result.error?.startsWith('Session expired')||result.error?.startsWith('Log into Terraria'))signOut();throw Error(result.error||'Request failed');}
+  return result;
+ }finally{busy=false;buttons();}
+}
+el('loginForm').onsubmit=async event=>{
+ event.preventDefault();hasQuote=false;
+ try{
+  const result=await call('login',{account:el('account').value,code:el('code').value});token=result.token;
+  const status=await call('status');el('identity').textContent=(status.wallet||'No linked wallet')+' · '+status.currency;
+  el('result').textContent=(status.pinSet?'PIN is configured. ':'Set your PIN to begin. ')+status.message;
+  el('access').hidden=true;el('transactions').hidden=false;
+ }catch(e){signOut();el('result').textContent=e.message;}finally{el('code').value='';buttons();}
+};
+async function act(action,data){hasQuote=false;try{const r=await call(action,data);el('result').textContent=r.message;hasQuote=action==='quote';}catch(e){el('result').textContent=e.message;}finally{el('oldPin').value='';el('newPin').value='';if(action==='confirm')el('pin').value='';buttons();}}
+el('savePin').onclick=()=>act('setPin',{newPin:el('newPin').value,oldPin:el('oldPin').value});
+el('quote').onclick=()=>act('quote',{amount:el('amount').value,pin:el('pin').value});
+el('confirm').onclick=()=>act('confirm',{pin:el('pin').value});
 </script></html>
