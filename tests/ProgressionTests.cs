@@ -12,6 +12,32 @@ static class ProgressionTests
         int checks=0;
         void Check(bool c){if(!c)throw new Exception("Progression check "+(checks+1));checks++;}
         void Reject(Action a){try{a();}catch(InvalidOperationException){checks++;return;}throw new Exception("Expected progression rejection");}
+        var configDir=Path.Combine(Path.GetTempPath(),"progression-config-"+Guid.NewGuid());
+        try
+        {
+            var manager=new ConfigManager(configDir);manager.Load(); // Saves all default ranks on first run.
+            manager.Load(); // Reloading that saved file must not append another 100 ranks.
+            Check(manager.Current.Progression.Ranks.Count==100);
+            Check(manager.Current.Progression.Quests.Count==2 && manager.Current.Progression.Jobs.Count==2);
+            manager.Current.Progression.Ranks[1].Cost=0.25m;
+            manager.Current.Progression.Quests.Clear();
+            manager.Current.Progression.Jobs=new(){new(){Id="custom-hunt",Name="Custom hunt"}};
+            manager.Save();
+            var restarted=new ConfigManager(configDir);restarted.Load();
+            Check(restarted.Current.Progression.Ranks.Count==100 && restarted.Current.Progression.Ranks[1].Cost==0.25m);
+            Check(restarted.Current.Progression.Quests.Count==0);
+            Check(restarted.Current.Progression.Jobs.Count==1 && restarted.Current.Progression.Jobs[0].Id=="custom-hunt");
+            restarted.Load();Check(restarted.Current.Progression.Jobs.Count==1);
+            var active=restarted.Current;
+            var broken=JsonConvert.DeserializeObject<Newtonsoft.Json.Linq.JObject>(File.ReadAllText(restarted.FilePath))!;
+            broken["Progression"]!["Ranks"]![1]!["Level"]=1;
+            File.WriteAllText(restarted.FilePath,broken.ToString());Reject(restarted.Load);
+            Check(ReferenceEquals(active,restarted.Current));
+            File.WriteAllText(restarted.FilePath,"{}");
+            var legacy=new ConfigManager(configDir);legacy.Load();
+            Check(legacy.Current.Progression.Ranks.Count==100 && legacy.Current.Progression.Quests.Count==2);
+        }
+        finally { Directory.Delete(configDir,true); }
         var path=Path.Combine(Path.GetTempPath(),"progression-"+Guid.NewGuid()+".sqlite");
         using var connection=new SqliteConnection("Data Source="+path);connection.Open();
         var db=new EconomyDatabase(connection);db.EnsureSchema();

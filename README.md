@@ -1,8 +1,8 @@
-# 🌎 Arkovia Economy for Terraria / TShock — v1.3.0-rc.1
+# 🌎 Arkovia Economy for Terraria / TShock — v1.3.1-rc.1
 
 > A treasury-backed Terraria economy with paid ranks, quests, jobs, gameplay rewards, banking, player blockchain wallets, and optional Arkovia blockchain integration.
 
-**Current repository build: `v1.3.0-rc.1` (release candidate).** [Download the included DLL](release/ArkoviaEconomy.dll) · [Progression setup](docs/PROGRESSION.md) · [Changelog](CHANGELOG.md) · [Validation](VALIDATION.md). Live-server staging is still required; the repository build and GitHub Releases may differ until a release is published.
+**Current repository build: `v1.3.1-rc.1` (release candidate).** [Download the included DLL](release/ArkoviaEconomy.dll) · [Progression setup](docs/PROGRESSION.md) · [Changelog](CHANGELOG.md) · [Validation](VALIDATION.md). Live-server staging is still required; the repository build and GitHub Releases may differ until a release is published.
 
 **Arkovia Economy** is an open-source economy plugin for Terraria servers running TShock.
 
@@ -46,6 +46,10 @@ Server operators can use the native **ARKOS** currency or customize the economy 
 | Additional Terraria event rewards | ✅ Implemented — staging validation |
 
 ---
+
+## Fixed in v1.3.1-rc.1
+
+Fixes startup/reload failure after saving a full progression configuration. Saved rank, quest and job lists now replace built-in defaults instead of being appended to them. Existing custom definitions and empty quest/job lists are preserved; no config regeneration or database changes are required. Install the corrected DLL and restart TShock.
 
 ## New in v1.3.0-rc.1
 
@@ -671,7 +675,7 @@ The off-chain Terraria economy should be treated separately from blockchain avai
 
 ### Option A — Install the Included DLL
 
-The `v1.3.0-rc.1` repository build includes a compiled plugin at:
+The `v1.3.1-rc.1` repository build includes a compiled plugin at:
 
 ```text
 release/ArkoviaEconomy.dll

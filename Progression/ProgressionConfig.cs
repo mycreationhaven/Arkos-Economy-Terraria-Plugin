@@ -1,3 +1,5 @@
+using Newtonsoft.Json;
+
 namespace ArkoviaEconomy.Progression;
 
 public sealed class ProgressionConfig
@@ -7,6 +9,8 @@ public sealed class ProgressionConfig
     public int KillCooldownSeconds { get; set; } = 5;
     public int RankCooldownHours { get; set; } = 12;
     public bool RequireAdminApprovalForLevel100 { get; set; } = true;
+    // Saved lists replace defaults; appending breaks round-trip loading.
+    [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
     public List<RankDefinition> Ranks { get; set; } = Enumerable.Range(1,100).Select(level => new RankDefinition
     {
         Level = level, Name = level == 100 ? "Server Admin" : $"Level {level}",
@@ -14,11 +18,15 @@ public sealed class ProgressionConfig
         Experience = 25L*(level-1)*(level-1), ActiveMinutes = 10L*(level-1)*(level-1),
         Permissions = level == 100 ? new() { "*" } : new()
     }).ToList();
+    // Saved lists replace defaults; appending breaks round-trip loading.
+    [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
     public List<ActivityDefinition> Quests { get; set; } = new()
     {
         new() { Id="daily-hunt", Name="Daily monster hunt", RequiredKills=100, Reward=5, Experience=100, DailyLimit=1 },
         new() { Id="slime-patrol", Name="Slime patrol", NpcIds=new(){1}, RequiredKills=50, Reward=2, Experience=50, DailyLimit=1 }
     };
+    // Saved lists replace defaults; appending breaks round-trip loading.
+    [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
     public List<ActivityDefinition> Jobs { get; set; } = new()
     {
         new() { Id="hunter", Name="Monster hunter", RequiredKills=25, Reward=1, Experience=25, DailyLimit=10 },
