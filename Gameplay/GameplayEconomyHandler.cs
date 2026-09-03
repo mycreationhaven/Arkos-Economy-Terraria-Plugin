@@ -783,15 +783,11 @@ public sealed class GameplayEconomyHandler : IDisposable
             return;
         }
 
-        var requestedAtomic =
-            cfg.ToAtomic(
-                deathCfg.Penalty);
-
         var protectedAtomic =
             cfg.ToAtomic(
                 deathCfg.MinimumProtectedBalance);
 
-        if (requestedAtomic <= 0)
+        if (deathCfg.PenaltyPercent <= 0)
             return;
 
         var account =
@@ -805,13 +801,11 @@ public sealed class GameplayEconomyHandler : IDisposable
             $"{Guid.NewGuid():N}";
 
         var actualLoss =
-            _economy.ApplyGameplayLoss(
+            _economy.ApplyPercentageDeathLoss(
                 account,
-                requestedAtomic,
+                deathCfg.PenaltyPercent,
                 protectedAtomic,
-                "player_death",
                 referenceId,
-                "Gameplay death penalty",
                 player.Name);
 
         _lastDeathPenaltyUtc[userId] =

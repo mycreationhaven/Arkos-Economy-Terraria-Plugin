@@ -1,12 +1,16 @@
-# Validation status
+# Validation status — 1.1.0
 
-This source was authored against the current TShock 6.1.0 / .NET 9 API information available on 2026-08-27 and includes a GitHub Actions build workflow.
-
-The creation environment used to assemble this package does not have the .NET SDK installed, so a local `dotnet build` could not be executed here. The first required validation step after extraction is therefore:
+Validated with .NET SDK 9.0.317 against TShock 6.1.0:
 
 ```bash
-dotnet restore
 dotnet build -c Release
+dotnet run --project tests/ArkoviaEconomy.Tests.csproj -c Release
 ```
 
-Do not deploy to a production economy until the build passes and the test checklist in `docs/INSTALLATION.md` has been completed on a staging TShock server.
+Build succeeds. The existing CA1416 warning in wallet-recovery code remains (`UnixCreateMode` on Windows).
+
+The executable regression suite passes 61 checks using real SQLite database operations and simulated Nxt/Arkovia node responses. It covers percentage death loss, rounding, protected funds, bank preservation, PvP split conservation, treasury adjustments/overdrafts/audit actors, rollback on audit insertion failure, denomination guards, selected-currency metadata and balance queries, invalid node data, funding conversion, and repeated-sync idempotency.
+
+The release DLL is built from this source. GitHub Actions repeats the build and regression suite and uploads the DLL as an artifact.
+
+Not live-tested here: Terraria death packet handling/cooldowns, in-game command permission dispatch, a running Arkovia node with an actual custom currency, or MySQL. Before server rollout, stage those checks and confirm the intended currency ID, source account, protected minimum, and PvP settings. Follow the upgrade procedure in `docs/CONFIGURATION.md` before changing an existing economy's currency.

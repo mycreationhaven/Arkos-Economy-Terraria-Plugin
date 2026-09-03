@@ -32,7 +32,7 @@ public sealed class ArkoviaEconomyPlugin : TerrariaPlugin
         "Treasury-backed Arkovia economy framework for TShock/Terraria.";
 
     public override Version Version =>
-        new(1, 0, 0);
+        new(1, 1, 0);
 
     public ArkoviaEconomyPlugin(Main game)
         : base(game)
@@ -49,16 +49,17 @@ public sealed class ArkoviaEconomyPlugin : TerrariaPlugin
 
         _database.EnsureSchema();
 
+        _node = new ArkoviaNodeClient(() => _config.Current);
+        // Validate before registering commands, rewards or funding synchronization.
+        _node.ValidateCurrencyAsync(CancellationToken.None).GetAwaiter().GetResult();
+        _database.BindCurrency(_config.Current);
+
         _economy =
             new EconomyService(
                 _database,
                 () => _config.Current);
 
         _economy.GetTreasury();
-
-        _node =
-            new ArkoviaNodeClient(
-                () => _config.Current);
 
         _walletClaimClient = new WalletClaimClient();
 

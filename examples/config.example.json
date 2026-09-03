@@ -1,4 +1,6 @@
 {
+  "CurrencyId": "",
+  "AcceptExistingBalancesForCurrencyChange": false,
   "CurrencyName": "ARKOS",
   "CurrencySymbol": "ARKOS",
   "Decimals": 8,
@@ -66,7 +68,7 @@
     },
     "Death": {
       "Enabled": true,
-      "Penalty": 0.005,
+      "PenaltyPercent": 25.0,
       "MinimumProtectedBalance": 0.0,
       "CooldownSeconds": 60,
       "ShowZeroBalanceMessage": true

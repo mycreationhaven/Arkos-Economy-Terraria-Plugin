@@ -94,6 +94,29 @@ public sealed class EconomyDatabase
         ));
     }
 
+    public void BindCurrency(Config.EconomyConfig cfg)
+    {
+        const string key = "economy.denomination";
+        var saved = GetState(key);
+        if (saved is null)
+        {
+            using var rows = _db.QueryReader("SELECT Id FROM ArkoviaEconomyAccounts LIMIT 1");
+            // Legacy installations used eight decimals unless explicitly configured otherwise.
+            if (rows.Read()) saved = "native:8";
+        }
+        var desired = $"{(cfg.CurrencyId.Length == 0 ? "native" : cfg.CurrencyId)}:{cfg.Decimals}";
+        if (saved is not null && saved != desired)
+        {
+            if (saved.Split(':')[1] != cfg.Decimals.ToString())
+                throw new InvalidOperationException("Off-chain Decimals differs from the stored denomination. Restore the original scale; balances will not be rescaled automatically.");
+            if (!cfg.AcceptExistingBalancesForCurrencyChange)
+                throw new InvalidOperationException("Changing currency would relabel existing balances. Back up the database, then explicitly set AcceptExistingBalancesForCurrencyChange=true to preserve numeric balances in the new currency.");
+            SetState("economy.previous_denomination", saved);
+            TShock.Log?.ConsoleWarn($"[ArkoviaEconomy] Explicit currency change {saved} -> {desired}; existing off-chain amounts retained without conversion.");
+        }
+        SetState(key, desired);
+    }
+
     public ArkoviaPlayerWallet? GetPlayerWallet(int userId)
     {
         using var r = _db.QueryReader(
@@ -189,6 +212,46 @@ public sealed class EconomyDatabase
                 "Unable to read newly created account.");
 
         return r.Get<long>("Id");
+    }
+
+    // Use one dedicated connection: TShock's Query helpers open independent connections.
+    public void CommitWalletMovement(
+        IReadOnlyList<(long Id, long Before, long After)> changes,
+        long? fromId, long? toId, long amount, string type,
+        string referenceType, string referenceId, string description, string actor)
+    {
+        using var connection = (IDbConnection)(Activator.CreateInstance(_db.GetType(), _db.ConnectionString)
+            ?? throw new InvalidOperationException("Unable to open economy transaction connection."));
+        connection.Open();
+        using var transaction = connection.BeginTransaction();
+        int Execute(string sql, params object[] values)
+        {
+            using var command = connection.CreateCommand();
+            command.Transaction = transaction;
+            command.CommandText = sql;
+            for (var i = 0; i < values.Length; i++)
+            {
+                var parameter = command.CreateParameter();
+                parameter.ParameterName = "@p" + i;
+                parameter.Value = values[i];
+                command.Parameters.Add(parameter);
+            }
+            return command.ExecuteNonQuery();
+        }
+        var now = DateTime.UtcNow.ToString("O");
+        foreach (var change in changes)
+        {
+            if (change.After < 0 || Execute(
+                "UPDATE ArkoviaEconomyAccounts SET WalletAtomic=@p0,UpdatedUtc=@p1 WHERE Id=@p2 AND WalletAtomic=@p3",
+                change.After, now, change.Id, change.Before) != 1)
+                throw new InvalidOperationException("Account changed during adjustment; no funds were moved. Retry.");
+        }
+        Execute("INSERT INTO ArkoviaEconomyTransactions " +
+            "(ExternalId,FromAccountId,ToAccountId,AmountAtomic,Type,ReferenceType,ReferenceId,Description,Actor,CreatedUtc) " +
+            "VALUES (@p0,@p1,@p2,@p3,@p4,@p5,@p6,@p7,@p8,@p9)",
+            Guid.NewGuid().ToString("N"), fromId ?? 0, toId ?? 0, amount, type,
+            referenceType, referenceId, description, actor, now);
+        transaction.Commit();
     }
 
     public void SetBalances(

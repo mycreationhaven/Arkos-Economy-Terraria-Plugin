@@ -189,7 +189,7 @@ No client-side Terraria mod is required for this native floating-text feedback.
 
 ## ☠️ Death Economy
 
-Normal Terraria deaths can deduct a configurable amount from the players gameplay Wallet.
+Normal Terraria deaths deduct a configurable percentage of the gameplay Wallet (`GameplayEconomy.Death.PenaltyPercent`, default **25%**). Losses round down to whole atomic units and respect the protected minimum.
 
 Important rules:
 
@@ -202,12 +202,12 @@ Important rules:
 Example:
 
 ```text
-Wallet before death: 0.003 ARKOS
-Bank:                50 ARKOS
-Configured penalty:   0.005 ARKOS
+Wallet before death: 100 ARKOS
+Bank:                 50 ARKOS
+Configured penalty:   25%
 
-Actual loss:          0.003 ARKOS
-Wallet after death:   0
+Actual loss:          25 ARKOS (credited to Terraria Treasury)
+Wallet after death:   75 ARKOS
 Bank after death:     50 ARKOS
 ```
 
@@ -716,7 +716,15 @@ ARKOS uses eight decimal places, allowing very small gameplay rewards while keep
 
 ---
 
-## 🎨 Using Your Own Arkovia-Based Currency
+## Custom on-chain currency selection
+
+Set top-level `CurrencyId` to the numeric Arkovia Monetary System currency ID, or leave it blank for native ARKOS. At startup the node validates the ID and supplies the currency name, code and blockchain decimals. Invalid IDs or unavailable validation stop startup before economy commands and funding are enabled.
+
+See [currency setup and upgrade instructions](docs/CONFIGURATION.md#currency-selection-and-safe-upgrades). Off-chain `Decimals` stays at its existing scale; blockchain precision never rewrites stored balances. Changing an existing economy's currency requires explicit acceptance of relabeling its numeric balances.
+
+Administrators with `arkoviaeconomy.admin.treasury` can use `/treasury add <amount>`, `/treasury take <amount>`, and `/treasury`. Adjustments affect the internal treasury only, are audited, and cannot overdraw it.
+
+## 🎨 Customizing Native Currency Presentation
 
 Arkovia Economy is designed so server operators can customize the currency presented inside Terraria.
 
@@ -925,7 +933,7 @@ The following values are useful starting ranges for testing rather than universa
 | Mid-game boss | 0.25 - 0.50 |
 | End-game boss | 0.50 - 1.00 |
 | Quest | 0.05 - 0.25 |
-| Normal death | -0.005 |
+| Normal death | 25% of Wallet |
 | PvP death | -0.01 |
 
 Operators using a custom currency should scale these values to the economics of that currency rather than copying ARKOS values blindly.

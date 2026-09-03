@@ -4,6 +4,19 @@ namespace ArkoviaEconomy.Config;
 
 public sealed class EconomyConfig
 {
+    // Off-chain Decimals is independent of node currency decimals and never auto-rescaled.
+    public string CurrencyId { get; set; } = "";
+    public bool AcceptExistingBalancesForCurrencyChange { get; set; } = false;
+    [JsonIgnore]
+    public string FundingEventType => CurrencyId.Length > 0 && Arkovia.ExpectedLedgerEventType == "BLOCK_GENERATED"
+        ? "CURRENCY_TRANSFER" : Arkovia.ExpectedLedgerEventType;
+    [JsonIgnore]
+    public int BlockchainDecimals { get; set; } = 8;
+    public long BlockchainToAtomic(long units) => checked((long)Math.Floor(
+        units * (decimal)AtomicUnit / Pow10(BlockchainDecimals)));
+    public string FormatBlockchain(long units) =>
+        $"{units / (decimal)Pow10(BlockchainDecimals):0.########} {CurrencySymbol}";
+
     public string CurrencyName { get; set; } = "ARKOS";
     public string CurrencySymbol { get; set; } = "ARKOS";
     public int Decimals { get; set; } = 8;
@@ -134,8 +147,8 @@ public sealed class GameplayDeathConfig
 {
     public bool Enabled { get; set; } = true;
 
-    // Default ordinary death loss.
-    public decimal Penalty { get; set; } = 0.005m;
+    // Percentage of the wallet; capped to preserve MinimumProtectedBalance.
+    public decimal PenaltyPercent { get; set; } = 25m;
 
     // Gameplay penalties affect the wallet balance only.
     // Banked currency remains protected.

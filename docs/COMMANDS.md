@@ -96,7 +96,14 @@ arkoviaeconomy.use
 /treasury
 ```
 
-Shows treasury information available to the caller.
+Shows the internal Terraria Treasury and synchronization status.
+
+```text
+/treasury add <amount>
+/treasury take <amount>
+```
+
+Both adjustments require `arkoviaeconomy.admin.treasury`. That permission also allows viewing `/treasury`; view-only users cannot adjust funds. Amounts must be positive and representable at the off-chain scale. `take` rejects an overdraft. Each adjustment records its actor and direction in the ledger and affects only the internal treasury, with no blockchain transaction.
 
 Permission:
 

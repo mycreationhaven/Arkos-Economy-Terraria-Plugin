@@ -87,7 +87,7 @@ The death configuration controls off-chain Wallet deductions caused by normal Te
 Recommended starting behavior:
 
 ```text
-Normal death penalty: 0.005 ARKOS
+Normal death penalty: 25% of Wallet (PenaltyPercent: 25)
 Protected minimum:    0
 Cooldown:             60 seconds
 ```
@@ -97,7 +97,7 @@ Important behavior:
 - losses are taken from the gameplay Wallet only
 - Bank funds remain protected
 - balances never go below zero
-- actual loss is clamped to available Wallet funds
+- percentage is calculated from the full Wallet, rounded down to atomic units, and capped at Wallet minus MinimumProtectedBalance
 - normal death loss returns to the internal treasury
 
 ---
@@ -254,3 +254,32 @@ For production servers:
 5. test `/balance`, `/treasury`, rewards, death, and PvP with small values
 6. test blockchain commands only against the intended trusted node
 7. review logs for errors without exposing secrets
+
+
+## Currency selection and safe upgrades
+
+```json
+{
+  "CurrencyId": "",
+  "AcceptExistingBalancesForCurrencyChange": false,
+  "Decimals": 8
+}
+```
+
+- Blank `CurrencyId` selects native ARKOS. A positive numeric ID selects a Monetary System currency on the configured Arkovia node; symbols such as `VELR` are not IDs.
+- A custom ID is validated with `getCurrency` at startup, including when automatic funding is disabled. Name, code, and blockchain decimals come from the node. Invalid metadata or an unreachable node stops initialization before gameplay/commands are registered; there is no silent native fallback.
+- On-chain balances use `getAccountCurrencies` and confirmed `units` for custom currencies. Native balances use `getAccount` and native atomic units. A valid account with no selected currency returns zero.
+- `Decimals` is the off-chain storage scale, normally **8**. It is independent of blockchain decimals. For example, 123 on-chain units of a two-decimal currency become 123,000,000 off-chain atomic units (1.23 currency). Tiny gameplay rewards can still use eight decimals. Conversion checks overflow and rounds down when reducing precision.
+- Funding ledger queries filter `CURRENCY_BALANCE` plus the selected ID. The native default `BLOCK_GENERATED` event automatically becomes `CURRENCY_TRANSFER` for custom currencies. Other explicitly configured event types are retained. Configure the source account to one that actually holds the selected currency.
+- Custom funding keys and balance baselines are isolated by currency and source. Existing native ledger keys and the legacy native high-water mark are preserved. The existing empty-ledger balance-growth fallback establishes a baseline without crediting the first observation; it still does not provide the ledger path's confirmation-depth guarantee.
+
+### Existing installations
+
+1. Stop the server and back up its database and configuration.
+2. Replace the plugin DLL. Keep `Decimals` unchanged. Existing wallet, bank, treasury, history, and linked public wallet records are retained.
+3. Replace the old ordinary-death `Penalty` setting with `PenaltyPercent` (0–100). If omitted, the new default is 25%; the old fixed `Penalty` no longer controls ordinary deaths. PvP retains its separate fixed `Penalty`, winner percentage, and treasury percentage.
+4. For a currency change, set `CurrencyId` and explicitly set `AcceptExistingBalancesForCurrencyChange` to `true`. This retains numeric balances and relabels them in the selected currency; it does **not** perform an exchange or create on-chain backing. Without that opt-in the change is rejected.
+5. Restart. After a successful change, set the acceptance flag back to `false`. The previous denomination is recorded in database state. Unmarked legacy databases are assumed to use native currency at eight decimals; installations with a different historical scale require a reviewed migration before upgrade.
+6. Currency, off-chain decimals, node URL, and funding source changes require a restart. Invalid reloads retain the active configuration. Changing the stored off-chain scale is rejected even with the acceptance flag.
+
+Ordinary death movements and admin adjustments commit their balance changes and audit entry in one database transaction. PvP continues to use its existing independent payout path.
