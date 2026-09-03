@@ -238,58 +238,21 @@ Errors returned to ordinary players should also avoid leaking internal filesyste
 
 ---
 
-## Future Deposits
+## Deposits, withdrawals, grants, and PINs
 
-Blockchain deposits are not currently enabled.
+Implemented transfer flows are disabled until configured. See [the complete deployment and security boundaries](BLOCKCHAIN_SETUP.md).
 
-A future deposit system should require:
+Deposits verify the selected currency, sender's linked wallet, reserve destination, amount, full hash, confirmations, and absence of phasing. A unique operation record and wallet credit commit together. Unconfirmed transactions are not credited.
 
-- authoritative blockchain transaction verification
-- sufficient confirmations
-- destination verification
-- amount validation
-- replay/idempotency protection
-- atomic off-chain crediting
-- audit records
+Withdrawals require a logged-in authorized TShock user and PIN confirmation on the HTTPS portal. The separate signer holds the reserve secret; TShock receives signed bytes, independently validates them against the node, and stores them with a wallet hold before any broadcast. Retries use exactly the same signed bytes. Duplicate outgoing full hashes cannot reserve funds twice. The reserve pays the actual native network fee, subject to caps and pending-payment coverage.
 
-Never credit a gameplay deposit merely because a client claims a transaction occurred.
+A timeout never refunds a potentially broadcast transaction. Treasury administrators can explicitly reconcile only a transaction absent from a fresh trusted node after its deadline plus a one-hour safety window. Known or uncertain payments retain their hold. Deep reorganizations beyond the confirmation policy are not automatically reversed.
 
----
+Starter grants use separate eligibility permissions, one durable record per TShock user ID, a daily cap, and reserve limits. Those controls do not prove unique human identity. Do not grant starter eligibility automatically to disposable accounts.
 
-## Future Withdrawals
+PINs never enter Terraria command text. The HTTPS portal uses 256-bit expiring bearer sessions, origin validation, a restrictive content security policy, and permission rechecks. PIN storage uses a random salt, PBKDF2-SHA256 with 600,000 iterations, constant-time comparison, and persistent five-attempt/15-minute lockouts. Changing a PIN requires the current PIN; there is no unauthenticated reset endpoint. Proxy administrators must not log Authorization headers or request bodies.
 
-Blockchain withdrawals are not currently enabled.
-
-Do not place a treasury or reserve private key inside the TShock plugin to add withdrawals.
-
-Use a separately secured, narrowly scoped localhost signing service.
-
-A future withdrawal design should include:
-
-- player authorization
-- off-chain balance reservation
-- actual network fee determination
-- transaction amount validation
-- replay protection
-- rate and withdrawal limits
-- signing-service authentication
-- transaction ID recording
-- confirmation tracking
-- safe release of reserved funds when submission fails
-
-The hot wallet should intentionally contain substantially less value than long-term treasury holdings.
-
----
-
-## Future Security PIN
-
-A separate player economy PIN is planned for sensitive actions such as future withdrawals and wallet security changes.
-
-The PIN must not be entered through a normal logged Terraria command such as `/arkos pin set 123456`.
-
-A secure implementation should use a private input/session mechanism or a protected HTTPS workflow.
-
-Only a salted password-derived hash should be stored, never the plaintext PIN.
+New event pools and blockchain settlements are atomic. Legacy gameplay/bank/PvP operations retain their existing implementations and are not covered by a claim that every historical economy operation is now atomic.
 
 ---
 

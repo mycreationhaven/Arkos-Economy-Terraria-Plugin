@@ -217,7 +217,7 @@ Current gameplay integrations include eligible NPC rewards, normal death deducti
 
 These operations use the off-chain gameplay ledger and do not create a blockchain transaction for every gameplay event.
 
-Old Ones Army / DD2 contribution tracking is experimental. DD2 completion payout is currently disabled pending atomic multiplayer treasury payout support.
+DD2 and additional event completion pools are implemented with atomic multiplayer settlement. See EVENT_REWARDS.md for eligibility and completion rules.
 
 ---
 
@@ -232,3 +232,16 @@ The blockchain command namespace currently remains:
 ```
 
 Changing `CurrencyName` or `CurrencySymbol` does not automatically rename that command namespace or alter the underlying blockchain protocol/address format.
+
+## Blockchain settlement commands (configured deployments)
+
+| Command | Purpose |
+|---|---|
+| `/arkos deposit` | Show the reserve deposit instructions |
+| `/arkos deposit <fullHash>` | Verify and credit a confirmed linked-wallet deposit |
+| `/arkos security` / `/arkos pin` / `/arkos withdraw` | Issue the private HTTPS PIN/withdrawal link; no PIN or amount arguments |
+| `/arkos transfers` | Show recent withdrawal/grant states and hashes |
+| `/eco settlement` | Treasury-admin queue/status overview |
+| `/eco releaseexpired <operationId>` | Guarded treasury-admin reconciliation of an expired, absent payment |
+
+See BLOCKCHAIN_SETUP.md for permissions, PIN requirements, sponsored fees, confirmations, expiry rules, and setup. `/bank deposit` and `/bank withdraw` remain off-chain.

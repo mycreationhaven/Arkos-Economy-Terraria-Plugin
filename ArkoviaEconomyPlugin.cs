@@ -1,4 +1,5 @@
 using Terraria;
+using ArkoviaEconomy.Security;
 using TerrariaApi.Server;
 using TShockAPI;
 using ArkoviaEconomy.Api;
@@ -21,6 +22,8 @@ public sealed class ArkoviaEconomyPlugin : TerrariaPlugin
     private WalletClaimClient? _walletClaimClient;
     private ArkoviaFundingSynchronizer? _sync;
     private GameplayEconomyHandler? _gameplay;
+    private BlockchainTransferService? _transfers;
+    private SecurityPortal? _portal;
     private List<Command> _commands = new();
 
     public override string Name => "Arkovia Economy";
@@ -32,7 +35,7 @@ public sealed class ArkoviaEconomyPlugin : TerrariaPlugin
         "Treasury-backed Arkovia economy framework for TShock/Terraria.";
 
     public override Version Version =>
-        new(1, 1, 0);
+        new(1, 2, 0);
 
     public ArkoviaEconomyPlugin(Main game)
         : base(game)
@@ -70,6 +73,13 @@ public sealed class ArkoviaEconomyPlugin : TerrariaPlugin
                 _economy,
                 () => _config.Current);
 
+        _transfers = new BlockchainTransferService(_database, _economy, _node, () => _config.Current);
+        _transfers.InitializeAsync(CancellationToken.None).GetAwaiter().GetResult();
+        _portal = new SecurityPortal(_database, new TransactionPinService(_database), _transfers,
+            () => _config.Current, (userId, permission) => TShock.Players.Any(p =>
+                p is { Active: true, IsLoggedIn: true } && p.Account?.ID == userId && p.HasPermission(permission)));
+        _portal.Start();
+
         var handlers =
             new EconomyCommands(
                 _economy,
@@ -77,7 +87,7 @@ public sealed class ArkoviaEconomyPlugin : TerrariaPlugin
                 _config,
                 _sync,
                 _node,
-                _walletClaimClient);
+                _walletClaimClient, _transfers, _portal);
 
         _commands =
             handlers.Build().ToList();
@@ -97,6 +107,7 @@ public sealed class ArkoviaEconomyPlugin : TerrariaPlugin
         _gameplay.Register();
 
         _sync.Start();
+        _transfers.Start();
 
         TShock.Log.ConsoleInfo(
             $"[ArkoviaEconomy] v{Version} initialized. " +
@@ -117,6 +128,8 @@ public sealed class ArkoviaEconomyPlugin : TerrariaPlugin
             _commands.Clear();
 
             _gameplay?.Dispose();
+            _portal?.Dispose();
+            _transfers?.Dispose();
             _sync?.Dispose();
             _node?.Dispose();
 

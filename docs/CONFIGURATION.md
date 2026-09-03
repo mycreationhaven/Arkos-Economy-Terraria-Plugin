@@ -226,20 +226,9 @@ Changing only the Terraria display ticker is not sufficient to redefine the unde
 
 ---
 
-## Planned Configuration Areas
+## Remaining configuration work
 
-The following capabilities are planned or still evolving and should not be assumed to be available merely because they appear on the roadmap:
-
-- blockchain deposits
-- blockchain withdrawals
-- outgoing transaction fee quoting
-- signing bridge settings
-- starter wallet grants
-- ARKOS security PIN
-- contribution-based boss rewards
-- additional invasion/event reward pools
-- expanded floating-text controls
-- broader player balance privacy controls
+Deposits, withdrawals, fees, signer, grants, PINs, and event pools now have implemented configuration; see the 1.2.0 sections below. Future configuration work includes boss-specific shared pools, expanded floating-text controls, and broader balance privacy settings.
 
 ---
 
@@ -283,3 +272,7 @@ For production servers:
 6. Currency, off-chain decimals, node URL, and funding source changes require a restart. Invalid reloads retain the active configuration. Changing the stored off-chain scale is rejected even with the acceptance flag.
 
 Ordinary death movements and admin adjustments commit their balance changes and audit entry in one database transaction. PvP continues to use its existing independent payout path.
+
+## 1.2.0 event and blockchain settings
+
+`EventRewards`, `Transfers`, and `SecurityPortal` are shown in the example configuration. Defaults enable small off-chain event pools while leaving reserve spending and the PIN portal disabled. Transfer and portal changes require restart. See [event rules](EVENT_REWARDS.md) and [reserve/signer/PIN setup](BLOCKCHAIN_SETUP.md) before enabling transfers.

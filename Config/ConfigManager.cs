@@ -38,6 +38,8 @@ public sealed class ConfigManager
         {
             if (candidate.CurrencyId != Current.CurrencyId || candidate.Decimals != Current.Decimals ||
                 candidate.Arkovia.NodeUrl != Current.Arkovia.NodeUrl ||
+                JsonConvert.SerializeObject(candidate.Transfers) != JsonConvert.SerializeObject(Current.Transfers) ||
+                JsonConvert.SerializeObject(candidate.SecurityPortal) != JsonConvert.SerializeObject(Current.SecurityPortal) ||
                 candidate.Arkovia.CommunityDevelopmentAccount != Current.Arkovia.CommunityDevelopmentAccount)
                 throw new InvalidOperationException("Currency, decimals, node and source-account changes require a server restart. Active configuration was retained.");
             candidate.BlockchainDecimals = Current.BlockchainDecimals;
@@ -69,6 +71,29 @@ public sealed class ConfigManager
         if (cfg.Arkovia.LedgerPageSize is < 1 or > 1000) cfg.Arkovia.LedgerPageSize = 100;
 
 
+        if (cfg.EventRewards.MinimumDamage < 1 || cfg.EventRewards.MinimumDurationSeconds < 0 ||
+            cfg.EventRewards.Pools.Any(p => p.Value < 0))
+            throw new InvalidOperationException("Invalid event reward limits.");
+        var transfer = cfg.Transfers;
+        if (transfer.Confirmations < 1 || transfer.PollSeconds < 15 || transfer.MinimumWithdrawal <= 0 ||
+            transfer.MaximumWithdrawal < transfer.MinimumWithdrawal || transfer.DailyWithdrawalLimit < transfer.MaximumWithdrawal ||
+            transfer.MinimumReserve < 0 || transfer.MaximumNetworkFeeArkos <= 0 ||
+            transfer.StarterGrant.Amount <= 0 || transfer.StarterGrant.MaximumPerDay < 1)
+            throw new InvalidOperationException("Invalid blockchain transfer limits.");
+        if (transfer.Enabled && (string.IsNullOrWhiteSpace(transfer.ReserveAccount) || !cfg.SecurityPortal.Enabled))
+            throw new InvalidOperationException("Transfers require a reserve account and the security portal.");
+        if (cfg.SecurityPortal.Enabled)
+        {
+            if (!Uri.TryCreate(cfg.SecurityPortal.ListenUrl, UriKind.Absolute, out var listen) ||
+                !listen.IsLoopback || listen.Scheme != "http" || !cfg.SecurityPortal.ListenUrl.EndsWith('/'))
+                throw new InvalidOperationException("Security portal must listen on loopback HTTP with a trailing slash.");
+            if (!Uri.TryCreate(cfg.SecurityPortal.PublicUrl, UriKind.Absolute, out var publicUrl) ||
+                publicUrl.Scheme != "https" || !cfg.SecurityPortal.PublicUrl.EndsWith('/') ||
+                cfg.SecurityPortal.SessionMinutes is < 1 or > 10)
+                throw new InvalidOperationException("Set an HTTPS PublicUrl with a trailing slash and a 1-10 minute session.");
+        }
+        if (!Uri.TryCreate(transfer.SignerUrl, UriKind.Absolute, out var signer) || !signer.IsLoopback || signer.Scheme != "http")
+            throw new InvalidOperationException("SignerUrl must be loopback HTTP.");
         var gameplay = cfg.GameplayEconomy;
 
         var allowedBroadcastModes = new[]

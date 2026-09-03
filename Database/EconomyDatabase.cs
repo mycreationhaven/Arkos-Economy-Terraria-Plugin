@@ -6,7 +6,7 @@ using ArkoviaEconomy.Models;
 
 namespace ArkoviaEconomy.Database;
 
-public sealed class EconomyDatabase
+public sealed partial class EconomyDatabase
 {
     private readonly IDbConnection _db;
 
@@ -14,6 +14,7 @@ public sealed class EconomyDatabase
 
     public void EnsureSchema()
     {
+        EnsureSettlementSchema();
         var creator = new SqlTableCreator(_db, _db.GetSqlQueryBuilder());
 
         creator.EnsureTableStructure(new SqlTable("ArkoviaPlayerWallets",
@@ -107,6 +108,9 @@ public sealed class EconomyDatabase
         var desired = $"{(cfg.CurrencyId.Length == 0 ? "native" : cfg.CurrencyId)}:{cfg.Decimals}";
         if (saved is not null && saved != desired)
         {
+            if (Operations("withdrawal").Concat(Operations("grant")).Concat(Operations("event"))
+                .Any(o => o.Status is "Held" or "Queued"))
+                throw new InvalidOperationException("Resolve pending blockchain and event settlements before changing currency.");
             if (saved.Split(':')[1] != cfg.Decimals.ToString())
                 throw new InvalidOperationException("Off-chain Decimals differs from the stored denomination. Restore the original scale; balances will not be rescaled automatically.");
             if (!cfg.AcceptExistingBalancesForCurrencyChange)

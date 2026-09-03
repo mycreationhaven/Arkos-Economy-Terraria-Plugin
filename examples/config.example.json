@@ -12,7 +12,6 @@
   "MarketListingFeePercent": 1.0,
   "MarketSalesTaxPercent": 2.0,
   "ReturnServerFeesToTreasury": true,
-
   "Banking": {
     "Enabled": true,
     "DepositFeePercent": 0.0,
@@ -21,14 +20,12 @@
     "InterestIntervalHours": 24,
     "MaximumInterestPerInterval": 100.0
   },
-
   "Rewards": {
     "Enabled": true,
     "EnforceTreasurySolvency": true,
     "DailyReward": 0.0,
     "NewPlayerReward": 0.0
   },
-
   "GameplayEconomy": {
     "Enabled": true,
     "DefaultBroadcastMode": "Silent",
@@ -47,18 +44,18 @@
       },
       "EarlyBoss": {
         "Enabled": true,
-        "Minimum": 0.10,
+        "Minimum": 0.1,
         "Maximum": 0.25
       },
       "MidBoss": {
         "Enabled": true,
         "Minimum": 0.25,
-        "Maximum": 0.50
+        "Maximum": 0.5
       },
       "EndGameBoss": {
         "Enabled": true,
-        "Minimum": 0.50,
-        "Maximum": 1.00
+        "Minimum": 0.5,
+        "Maximum": 1.0
       },
       "Quest": {
         "Enabled": true,
@@ -82,7 +79,6 @@
       "CooldownSeconds": 60
     }
   },
-
   "Arkovia": {
     "Enabled": true,
     "NodeUrl": "http://127.0.0.1:4876/nxt",
@@ -96,9 +92,50 @@
     "CreditOnlyPositiveLedgerChanges": true,
     "RequireNodeToBeLocalOrHttps": true
   },
-
   "Api": {
     "EnablePublicReadApi": true,
     "ExposePlayerBalances": false
+  },
+  "EventRewards": {
+    "Enabled": true,
+    "MinimumDamage": 100,
+    "MinimumDurationSeconds": 30,
+    "Pools": {
+      "DD2Tier1": 1,
+      "DD2Tier2": 2,
+      "DD2Tier3": 3,
+      "GoblinArmy": 1,
+      "FrostLegion": 1,
+      "PirateInvasion": 2,
+      "MartianMadness": 3,
+      "BloodMoon": 1,
+      "SolarEclipse": 2,
+      "PumpkinMoon": 3,
+      "FrostMoon": 3
+    }
+  },
+  "Transfers": {
+    "Enabled": false,
+    "ReserveAccount": "",
+    "SignerUrl": "http://127.0.0.1:4892/prepare",
+    "SignerApiKeyEnvironment": "ARKOVIA_SIGNER_API_KEY",
+    "MinimumWithdrawal": 0.01,
+    "MaximumWithdrawal": 100,
+    "DailyWithdrawalLimit": 500,
+    "MinimumReserve": 100,
+    "MaximumNetworkFeeArkos": 1,
+    "Confirmations": 10,
+    "PollSeconds": 30,
+    "StarterGrant": {
+      "Enabled": false,
+      "Amount": 10,
+      "MaximumPerDay": 10
+    }
+  },
+  "SecurityPortal": {
+    "Enabled": false,
+    "ListenUrl": "http://127.0.0.1:4891/",
+    "PublicUrl": "",
+    "SessionMinutes": 5
   }
 }

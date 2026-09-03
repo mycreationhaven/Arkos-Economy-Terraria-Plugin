@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using ArkoviaEconomy.Security;
 using ArkoviaEconomy.Config;
 using ArkoviaEconomy.Core;
 using ArkoviaEconomy.Database;
@@ -16,6 +17,8 @@ public sealed class EconomyCommands
     private readonly ArkoviaFundingSynchronizer _sync;
     private readonly ArkoviaNodeClient _node;
     private readonly WalletClaimClient _walletClaimClient;
+    private readonly BlockchainTransferService _transfers;
+    private readonly SecurityPortal _portal;
 
     private readonly ConcurrentDictionary<int, byte> _walletCreationInProgress = new();
 
@@ -28,7 +31,7 @@ public sealed class EconomyCommands
         ConfigManager config,
         ArkoviaFundingSynchronizer sync,
         ArkoviaNodeClient node,
-        WalletClaimClient walletClaimClient)
+        WalletClaimClient walletClaimClient, BlockchainTransferService transfers, SecurityPortal portal)
     {
         _economy = economy;
         _db = db;
@@ -36,6 +39,8 @@ public sealed class EconomyCommands
         _sync = sync;
         _node = node;
         _walletClaimClient = walletClaimClient;
+        _transfers = transfers;
+        _portal = portal;
     }
 
     public IEnumerable<Command> Build()
@@ -146,6 +151,40 @@ public sealed class EconomyCommands
 
             switch (args.Parameters[0].ToLowerInvariant())
             {
+                case "security":
+                case "pin":
+                case "withdraw":
+                    if (args.Parameters.Count != 1) throw new InvalidOperationException("Use /arkos security. Enter your PIN and withdrawal amount only on the secure page.");
+                    if (!args.Player.HasPermission(Permissions.Security)) throw new InvalidOperationException("Missing permission: " + Permissions.Security);
+                    args.Player.SendInfoMessage("Private security link (expires in a few minutes; keep Terraria logged in):");
+                    args.Player.SendInfoMessage(_portal.CreateLink(RequireTShockUserId(args)));
+                    break;
+                case "deposit":
+                    if (!args.Player.HasPermission(Permissions.BlockchainDeposit)) throw new InvalidOperationException("Missing deposit permission.");
+                    if (args.Parameters.Count == 1)
+                    {
+                        args.Player.SendInfoMessage("Send the selected currency FROM your linked wallet TO " + _config.Current.Transfers.ReserveAccount + ", then use /arkos deposit <fullHash> after confirmation.");
+                        break;
+                    }
+                    if (args.Parameters.Count != 2) throw new InvalidOperationException("Usage: /arkos deposit <fullHash>");
+                    var depositUser = RequireTShockUserId(args);
+                    RequirePlayerAccount(args);
+                    var hash = args.Parameters[1];
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            var credited = await _transfers.DepositAsync(depositUser, hash, CancellationToken.None);
+                            args.Player.SendSuccessMessage(credited ? "Confirmed blockchain deposit credited to your gameplay Wallet." : "This deposit was already credited.");
+                        }
+                        catch (Exception ex) { args.Player.SendErrorMessage(ex is InvalidOperationException ? ex.Message : "Deposit could not be verified. Try again later."); }
+                    });
+                    break;
+                case "transfers":
+                    var userId = RequireTShockUserId(args);
+                    foreach (var op in _db.Operations("withdrawal", userId).Concat(_db.Operations("grant", userId)).OrderByDescending(o => o.CreatedUtc).Take(10))
+                        args.Player.SendInfoMessage($"{op.Id}: {op.Status}, {_config.Current.Format(op.Atomic)}, full hash: {op.FullHash}");
+                    break;
                 case "wallet":
                     ArkosWallet(args);
                     break;
@@ -385,6 +424,8 @@ public sealed class EconomyCommands
             args.Player.SendInfoMessage(
                 "Generating your Arkovia blockchain wallet...");
 
+            var starterEligible = args.Player.HasPermission(Permissions.StarterGrant);
+            var creatorName = args.Player.Account!.Name;
             var generated =
                 await _node.GenerateWalletAsync(CancellationToken.None);
 
@@ -439,6 +480,9 @@ public sealed class EconomyCommands
                 generated.AccountId,
                 generated.AccountRS,
                 generated.PublicKey);
+
+            _economy.GetOrCreatePlayer(userId, creatorName);
+            if (starterEligible) _transfers.QueueStarterGrant(userId);
 
             WalletClaimResult? claim = null;
 
@@ -652,6 +696,7 @@ public sealed class EconomyCommands
 
     private void ArkosHelp(CommandArgs args)
     {
+        args.Player.SendInfoMessage("/arkos deposit [fullHash] | withdraw | security | transfers");
         args.Player.SendInfoMessage(
             "Arkovia / ARKOS blockchain commands:");
 
@@ -996,6 +1041,22 @@ public sealed class EconomyCommands
         {
             switch (args.Parameters[0].ToLowerInvariant())
             {
+                case "releaseexpired":
+                    if (!args.Player.HasPermission(Permissions.AdminTreasury)) throw new InvalidOperationException("Missing treasury admin permission.");
+                    if (args.Parameters.Count != 2) throw new InvalidOperationException("Usage: /eco releaseexpired <operationId>");
+                    var operationId = args.Parameters[1];
+                    var reconciliationActor = args.Player.Name;
+                    _ = Task.Run(async () =>
+                    {
+                        try { await _transfers.ReleaseExpiredAsync(operationId, CancellationToken.None, reconciliationActor); args.Player.SendSuccessMessage("Expired payment reconciled and audited."); }
+                        catch (Exception ex) { args.Player.SendErrorMessage(ex is InvalidOperationException ? ex.Message : "Unable to verify expiration. Hold retained."); }
+                    });
+                    break;
+                case "settlement":
+                    if (!args.Player.HasPermission(Permissions.AdminTreasury)) throw new InvalidOperationException("Missing treasury admin permission.");
+                    args.Player.SendInfoMessage(_transfers.LastStatus);
+                    args.Player.SendInfoMessage($"Pending events: {_db.Operations("event").Count(o => o.Status == "Queued")}; pending withdrawals: {_db.Operations("withdrawal").Count(o => o.Status == "Held")}");
+                    break;
                 case "help":
                     AdminHelp(args);
                     break;

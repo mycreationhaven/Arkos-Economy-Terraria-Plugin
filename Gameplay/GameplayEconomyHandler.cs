@@ -22,16 +22,15 @@ public sealed class GameplayEconomyHandler : IDisposable
     private readonly ConcurrentDictionary<int, DateTime>
         _lastPvpPenaltyUtc = new();
 
+    private readonly ConcurrentDictionary<int, byte> _knownEconomyPlayers = new();
+
     // NPC whoAmI -> last valid TShock player index
     private readonly ConcurrentDictionary<int, int>
         _lastNpcAttacker = new();
 
-    // Old One's Army / DD2 encounter tracking.
-    //
-    // This first implementation intentionally tracks contribution and
-    // authoritative win/loss state without paying currency. Event payouts
-    // will be enabled only after an atomic multiplayer treasury operation
-    // is added to EconomyService.
+    // Contributions are limited to genuine DD2 enemies and settled only on confirmed victory.
+    private readonly WorldEventTracker _worldEvents;
+    private string _dd2Id = "";
     private readonly object _dd2Sync = new();
 
     // TShock user ID -> damage dealt during the active DD2 encounter.
@@ -61,6 +60,7 @@ public sealed class GameplayEconomyHandler : IDisposable
         _plugin = plugin;
         _economy = economy;
         _config = config;
+        _worldEvents = new WorldEventTracker(plugin, economy, config);
     }
 
     public void Register()
@@ -68,6 +68,7 @@ public sealed class GameplayEconomyHandler : IDisposable
         if (_registered)
             return;
 
+        _worldEvents.Register();
         GetDataHandlers.KillMe.Register(OnKillMe);
 
         ServerApi.Hooks.NpcStrike.Register(
@@ -99,7 +100,7 @@ public sealed class GameplayEconomyHandler : IDisposable
                 "PvP currency transfers will fail closed.");
         }
 
-        TShock.Log.ConsoleInfo(
+        TShock.Log?.ConsoleInfo(
             "[ArkoviaEconomy] Gameplay death, PvP, NPC and boss " +
             "economy hooks registered.");
     }
@@ -159,6 +160,12 @@ public sealed class GameplayEconomyHandler : IDisposable
             _lastNpcAttacker[args.Npc.whoAmI] =
                 playerIndex;
 
+            if (!_knownEconomyPlayers.ContainsKey(tsPlayer.Account.ID))
+            {
+                _economy.GetOrCreatePlayer(tsPlayer.Account.ID, tsPlayer.Account.Name);
+                _knownEconomyPlayers.TryAdd(tsPlayer.Account.ID, 0);
+            }
+            _worldEvents.Track(tsPlayer.Account.ID, args.Npc, args.Damage);
             TrackDd2Contribution(
                 tsPlayer,
                 args.Npc,
@@ -176,12 +183,14 @@ public sealed class GameplayEconomyHandler : IDisposable
         NPC npc,
         int damage)
     {
-        if (damage <= 0 ||
-            player.Account == null)
+        if (damage <= 0 || npc.SpawnedFromStatue ||
+            npc.type < 0 || npc.type >= Terraria.ID.NPCID.Sets.BelongsToInvasionOldOnesArmy.Length ||
+            !Terraria.ID.NPCID.Sets.BelongsToInvasionOldOnesArmy[npc.type] || player.Account == null)
         {
             return;
         }
 
+        damage = Math.Min(damage, Math.Max(0, npc.life));
         lock (_dd2Sync)
         {
             if (!_dd2SessionActive)
@@ -233,9 +242,10 @@ public sealed class GameplayEconomyHandler : IDisposable
                 _dd2Difficulty = difficultyOverride;
 
             _dd2StartedUtc = DateTime.UtcNow;
+            _dd2Id = "event:" + Guid.NewGuid().ToString("N");
         }
 
-        TShock.Log.ConsoleInfo(
+        TShock.Log?.ConsoleInfo(
             $"[ArkoviaEconomy] DD2 session started. " +
             $"Difficulty={_dd2Difficulty}, " +
             $"Ongoing={Terraria.GameContent.Events.DD2Event.Ongoing}.");
@@ -254,7 +264,7 @@ public sealed class GameplayEconomyHandler : IDisposable
             _dd2VictoryPending = false;
         }
 
-        TShock.Log.ConsoleInfo(
+        TShock.Log?.ConsoleInfo(
             "[ArkoviaEconomy] DD2 loss reported.");
     }
 
@@ -271,7 +281,7 @@ public sealed class GameplayEconomyHandler : IDisposable
 
         orig();
 
-        TShock.Log.ConsoleInfo(
+        TShock.Log?.ConsoleInfo(
             "[ArkoviaEconomy] DD2 WinInvasionInternal observed.");
     }
 
@@ -279,12 +289,17 @@ public sealed class GameplayEconomyHandler : IDisposable
         On.Terraria.GameContent.Events.DD2Event.orig_StopInvasion orig,
         bool win)
     {
+        // Terraria invokes WinInvasionInternal FROM StopInvasion. Keep the
+        // encounter alive until orig returns so the nested victory hook is observed.
+        orig(win);
+
         Dictionary<int, long> contributions;
         bool sessionActive;
         bool victoryPending;
         bool lossReported;
         int difficulty;
         DateTime startedUtc;
+        string eventId;
 
         lock (_dd2Sync)
         {
@@ -293,6 +308,7 @@ public sealed class GameplayEconomyHandler : IDisposable
             lossReported = _dd2LossReported;
             difficulty = _dd2Difficulty;
             startedUtc = _dd2StartedUtc;
+            eventId = _dd2Id;
 
             contributions =
                 new Dictionary<int, long>(
@@ -304,9 +320,6 @@ public sealed class GameplayEconomyHandler : IDisposable
             _dd2Difficulty = 0;
             _dd2DamageByUserId.Clear();
         }
-
-        // Preserve Terraria's normal behavior.
-        orig(win);
 
         if (!sessionActive)
             return;
@@ -327,7 +340,7 @@ public sealed class GameplayEconomyHandler : IDisposable
             victoryPending &&
             !lossReported;
 
-        TShock.Log.ConsoleInfo(
+        TShock.Log?.ConsoleInfo(
             $"[ArkoviaEconomy] DD2 session ended. " +
             $"WinArgument={win}, " +
             $"VictoryPending={victoryPending}, " +
@@ -340,14 +353,15 @@ public sealed class GameplayEconomyHandler : IDisposable
 
         if (confirmedVictory)
         {
-            // Intentionally no ARKOS payout yet.
-            //
-            // The next stage adds an atomic treasury-backed multiplayer
-            // payout so an event can never partially reward a group.
-            TShock.Log.ConsoleInfo(
-                "[ArkoviaEconomy] DD2 victory confirmed. " +
-                "Reward settlement is currently disabled pending " +
-                "atomic multiplayer payout support.");
+            try
+            {
+                var cfg = _config();
+                var name = $"DD2Tier{Math.Clamp(difficulty, 1, 3)}";
+                if (cfg.GameplayEconomy.Enabled && cfg.EventRewards.Enabled &&
+                    duration.TotalSeconds >= cfg.EventRewards.MinimumDurationSeconds)
+                    _economy.QueueEvent(eventId, name, cfg.ToAtomic(cfg.EventRewards.Pools.GetValueOrDefault(name)), contributions);
+            }
+            catch (Exception ex) { TShock.Log?.ConsoleError("[ArkoviaEconomy] DD2 settlement: " + ex.Message); }
         }
     }
 
@@ -378,7 +392,7 @@ public sealed class GameplayEconomyHandler : IDisposable
                 if (!cfg.GameplayEconomy.LogNpcRewardDecisions)
                     return;
 
-                TShock.Log.ConsoleInfo(
+                TShock.Log?.ConsoleInfo(
                     $"[ArkoviaEconomy] NPC reward decision: " +
                     $"NPC={npcName}, NetID={npc.netID}, " +
                     $"WhoAmI={npc.whoAmI}, Boss={npc.boss}, " +
@@ -989,6 +1003,7 @@ public sealed class GameplayEconomyHandler : IDisposable
         if (!_registered)
             return;
 
+        _worldEvents.Dispose();
         GetDataHandlers.KillMe.UnRegister(
             OnKillMe);
 

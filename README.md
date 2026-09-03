@@ -32,13 +32,13 @@ Server operators can use the native **ARKOS** currency or customize the economy 
 | Player-created Arkovia wallets | ✅ Available |
 | Secure wallet recovery workflow | ✅ Available |
 | On-chain wallet balance lookup | ✅ Available |
-| DD2 / Old Ones Army tracking | 🧪 Experimental |
-| DD2 multiplayer reward payout | 🚧 Planned |
-| Blockchain deposits | 🚧 Planned |
-| Blockchain withdrawals | 🚧 Planned |
-| Automatic starter blockchain grant | 🚧 Planned |
-| ARKOS transaction PIN | 🚧 Planned |
-| Additional Terraria event rewards | 🚧 Planned |
+| DD2 / Old Ones Army tracking | ✅ Implemented — staging validation |
+| DD2 multiplayer reward payout | ✅ Implemented — staging validation |
+| Blockchain deposits | ✅ Implemented — configuration required |
+| Blockchain withdrawals | ✅ Implemented — configuration required |
+| Automatic starter blockchain grant | ✅ Implemented — configuration required |
+| ARKOS transaction PIN | ✅ Implemented — configuration required |
+| Additional Terraria event rewards | ✅ Implemented — staging validation |
 
 ---
 
@@ -404,16 +404,11 @@ The current plugin should not be interpreted as moving every gameplay transactio
 - secure recovery workflow integration
 - on-chain balance lookup
 
-### Planned / not yet production functionality
+### New in 1.2.0 release candidate
 
-- gameplay-to-blockchain withdrawals
-- blockchain-to-game deposits
-- automatic starter-wallet grants
-- transaction signing bridge
-- transaction-fee quoting for outgoing transfers
-- separate ARKOS security PIN for sensitive operations
+Confirmed blockchain deposits, PIN-authorized withdrawals, fee review, a separate local signing service, and optional one-time starter grants are implemented. These features are disabled until configured; installing the DLL alone does not enable reserve spending.
 
-These planned capabilities should not be assumed to exist merely because a player can create and inspect a blockchain wallet.
+Start with [blockchain and PIN setup](docs/BLOCKCHAIN_SETUP.md). The release includes `release/ArkoviaSigner.zip` alongside the updated plugin DLL. Network fees are paid by the operator's reserve. Existing Wallet and Bank amounts are preserved.
 
 ---
 
@@ -876,7 +871,7 @@ Consider:
 - death penalties
 - PvP redistribution
 - future shops and services
-- future deposits and withdrawals
+- configured deposits and withdrawals
 - reserve requirements
 
 A custom ticker alone is not an economic policy.
@@ -940,30 +935,13 @@ Operators using a custom currency should scale these values to the economics of 
 
 ---
 
-## 🏰 Old Ones Army / DD2 Support
+## 🏰 Old Ones Army / DD2 and Other Events
 
-The current source contains experimental tracking infrastructure for the Terraria Old Ones Army / DD2 event.
+DD2 now tracks genuine event-enemy contributions and pays a configured multiplayer pool after confirmed victory. The hook order handles Terraria's nested victory callback correctly. Additional completion pools cover Goblin Army, Frost Legion, Pirate Invasion, Martian Madness, Blood Moon, Solar Eclipse, Pumpkin Moon, and Frost Moon.
 
-It tracks:
+Pools are proportional to damage, conserve atomic units exactly, and settle all recipients and ledger entries in one database transaction. Completed events wait in a durable queue if funds or recipient limits prevent settlement. Active, unfinished encounter contributions are not recovered across server restarts. Normal NPC rewards remain separate.
 
-- event start
-- event activity
-- participating players
-- player contribution
-- event stop state
-- authoritative victory state
-
-### Important
-
-DD2 completion rewards are **not currently paid**.
-
-The implementation intentionally waits for an atomic multiplayer treasury payout operation before enabling event reward settlement.
-
-This prevents a partially completed multiplayer payout from leaving the economy in an inconsistent state.
-
-Normal eligible NPC rewards may still operate independently according to server configuration.
-
-Future event-economy work is expected to expand beyond DD2 to other Terraria invasions, moon events, and cooperative activities.
+See [event configuration and completion rules](docs/EVENT_REWARDS.md).
 
 ---
 
@@ -982,7 +960,7 @@ Potential integrations include:
 - server services
 - custom NPC systems
 - web dashboards
-- future deposit and withdrawal services
+- deposit and withdrawal services
 
 Integrations should use the central economy service whenever possible so balance changes remain auditable and treasury rules are consistently enforced.
 
@@ -1051,32 +1029,9 @@ docs/SECURITY.md
 
 ## 🛣️ Roadmap
 
-Planned and proposed development includes:
+The requested event, deposit, withdrawal, starter-grant, and PIN features are implemented in this release candidate. Live game-server/node staging remains required before enabling blockchain spending.
 
-- atomic multiplayer boss reward distribution
-- explicit Terraria boss progression tiers
-- segmented-boss duplicate-payout protection
-- additional invasion and event rewards
-- contribution-based cooperative reward pools
-- configurable gameplay message templates
-- expanded floating-currency configuration
-- blockchain deposits
-- blockchain withdrawals
-- isolated localhost transaction-signing service
-- outgoing blockchain fee quotation
-- reserve/liability reporting
-- automatic starter wallet grants with anti-abuse controls
-- separate security PIN for sensitive ARKOS operations
-- expanded player balance privacy controls
-- additional shop, market, job, and quest integrations
-
-Roadmap items are not promises of production availability. Check the current source and release notes before relying on a feature.
-
-See:
-
-```text
-docs/ROADMAP.md
-```
+Future work includes full reserve/liability reports, automatic deposit discovery, external-wallet ownership linking, forgotten-PIN recovery tooling, boss-specific pools, active-encounter restart recovery, and shop/market/job features. See [the current roadmap](docs/ROADMAP.md).
 
 ---
 

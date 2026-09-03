@@ -10,6 +10,11 @@ public static class Permissions
     public const string Jobs = "arkoviaeconomy.jobs";
     public const string TreasuryView = "arkoviaeconomy.treasury.view";
 
+    public const string Security = "arkoviaeconomy.security";
+    public const string BlockchainDeposit = "arkoviaeconomy.blockchain.deposit";
+    public const string BlockchainWithdraw = "arkoviaeconomy.blockchain.withdraw";
+    public const string StarterGrant = "arkoviaeconomy.blockchain.starter";
+
     public const string Wallet = "arkoviaeconomy.wallet";
 
     public const string Admin = "arkoviaeconomy.admin";
