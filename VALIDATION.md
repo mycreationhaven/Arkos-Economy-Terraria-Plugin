@@ -33,3 +33,7 @@ Before enabling reserve spending, follow docs/BLOCKCHAIN_SETUP.md and stage-test
 35 additional checks exercise paid ranks, protected Bank preservation, treasury conservation, XP/activity gates, cooldowns, daily kill caps, job/quest payouts, repeat-claim prevention, failed-claim progress retention, SQL fault rollback after wallet updates, restart persistence, demotion and permission removal, rank-100 approval, one-time item queues and plugin log output. A separate signer smoke run still passes all 14 checks.
 
 The plugin compiles against TShock 6.1.0. Live spawn/kill/death hooks, rank broadcasts, permission interactions, inventory delivery and MySQL progression transactions require staging. Item dispatch is deliberately at-most-once: a crash after durable removal needs manual reconciliation using the logged delivery intent. Default quests/jobs support NPC-kill objectives; other objective types are not implemented.
+
+## 1.3.1-rc.1 startup fix
+
+162 .NET regression checks pass, including nine added config-loading checks. A full default config save/reload reproduced the reported startup exception before the fix. Tests now cover full round-trip loading, fresh-process loading, custom rank costs, replacement job lists, empty quest lists, repeated reload, legacy missing defaults, and rejection of actual duplicate ranks while retaining active config. Signer code is unchanged.

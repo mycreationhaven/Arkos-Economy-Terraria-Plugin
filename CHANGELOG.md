@@ -1,3 +1,9 @@
+# 1.3.1-rc.1
+
+- Fix JSON deserialization appending saved progression lists to defaults, causing valid 100-rank configurations to abort startup.
+- Preserve custom ranks, quests and jobs, including intentionally empty activity lists.
+- Add config save/reload/restart regression coverage and verify genuine duplicate ranks still fail without replacing active config.
+
 # 1.3.0-rc.1
 
 - Move plugin logs into its own rotating files.
