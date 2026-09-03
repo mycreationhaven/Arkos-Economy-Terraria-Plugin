@@ -1,8 +1,8 @@
-# 🌎 Arkovia Economy for Terraria / TShock — v1.3.1-rc.1
+# 🌎 Arkovia Economy for Terraria / TShock — v1.3.2-rc.1
 
 > A treasury-backed Terraria economy with paid ranks, quests, jobs, gameplay rewards, banking, player blockchain wallets, and optional Arkovia blockchain integration.
 
-**Current repository build: `v1.3.1-rc.1` (release candidate).** [Download the included DLL](release/ArkoviaEconomy.dll) · [Progression setup](docs/PROGRESSION.md) · [Changelog](CHANGELOG.md) · [Validation](VALIDATION.md). Live-server staging is still required; the repository build and GitHub Releases may differ until a release is published.
+**Current repository build: `v1.3.2-rc.1` (release candidate).** [Download the included DLL](release/ArkoviaEconomy.dll) · [Progression setup](docs/PROGRESSION.md) · [Changelog](CHANGELOG.md) · [Validation](VALIDATION.md). Live-server staging is still required; the repository build and GitHub Releases may differ until a release is published.
 
 **Arkovia Economy** is an open-source economy plugin for Terraria servers running TShock.
 
@@ -46,6 +46,10 @@ Server operators can use the native **ARKOS** currency or customize the economy 
 | Additional Terraria event rewards | ✅ Implemented — staging validation |
 
 ---
+
+## New in v1.3.2-rc.1
+
+`/arkos security`, `/arkos pin` and `/arkos withdraw` now display the normal portal address plus a **six-digit, one-time access code**. Open the address and enter your TShock account name and the code. Long authentication links are no longer displayed. Codes expire after `SessionMinutes`, allow at most five wrong guesses and are limited to 60 redemption attempts across the server per minute. New codes invalidate earlier codes and browser sessions for the same account. Your saved transaction PIN remains unchanged. `/arkos transfers` now explains when there are no records.
 
 ## Fixed in v1.3.1-rc.1
 
@@ -540,13 +544,13 @@ The plugin verifies the sender, destination, currency, amount and confirmations 
 
 **Additional permission:** `arkoviaeconomy.security`. Requires the operator-configured HTTPS security portal.
 
-Sends you a private, short-lived link to the PIN and withdrawal page. Open it in your browser and remain logged into Terraria with the same authorized account. Keep the link private. Generating another link invalidates your earlier link; if it expires, run the command again.
+Displays the public portal address, your TShock account name and a six-digit access code. Open the address, enter that account name and code, and remain logged into Terraria. The address can be bookmarked; keep the code private. It works once and expires after `SessionMinutes` (five by default). Five incorrect guesses invalidate the code; there is also a server-wide limit of 60 redemption attempts per minute. Generating another code invalidates your previous code and browser session. If you refresh or close the page, obtain a new code. The access code is separate from your transaction PIN.
 
 This command only opens access to the portal. It does not change your PIN or initiate a withdrawal by itself. The portal's withdrawals also require transfer configuration and `arkoviaeconomy.blockchain.withdraw`.
 
 ### `/arkos pin`
 
-**Additional permission:** `arkoviaeconomy.security`. This is an alias for `/arkos security`: it opens the same private portal, not a separate chat-based PIN command.
+**Additional permission:** `arkoviaeconomy.security`. This is an alias for `/arkos security`: it issues an access code for the same portal, not a separate chat-based PIN command.
 
 On the page, set a **6–12 digit transaction PIN**. To change an existing PIN, supply the current PIN and the new PIN on that page. The PIN authorizes withdrawals; it is separate from your TShock password and blockchain recovery secret. Five failed PIN verifications cause a 15-minute lockout. This version does not include a forgotten-PIN recovery interface.
 
@@ -556,11 +560,11 @@ Use `/arkos pin` with no arguments. Never enter a PIN as `/arkos pin 123456` or 
 
 **Additional permissions:** `arkoviaeconomy.security` to open the page and `arkoviaeconomy.blockchain.withdraw` to request/confirm a withdrawal. Requires a linked wallet, configured transfers, a funded server reserve, the signing service and the HTTPS portal.
 
-This is another alias for `/arkos security`. Run it **without an amount, address or PIN**; it opens the page and does not immediately deduct funds.
+This is another alias for `/arkos security`. Run it **without an amount, address or PIN**; it issues an access code and does not immediately deduct funds.
 
 To withdraw:
 
-1. Open the private link and set your transaction PIN if needed.
+1. Open the portal address, sign in with your TShock account name and six-digit access code, and set your transaction PIN if needed.
 2. Enter a positive amount in the selected currency and your PIN on the page.
 3. Click **Review withdrawal**. Check the amount, destination account and actual network fee. The destination is your linked blockchain wallet; arbitrary destination addresses are not supported.
 4. Click **Confirm withdrawal** before the two-minute quote expires. Request a new quote if it expires.
@@ -572,7 +576,7 @@ A pending payment is not an immediate failure or automatic refund. If its status
 
 ### `/arkos transfers`
 
-Shows your ten most recent withdrawal and starter-grant records, including operation ID, status, amount and full hash when available. It requires the base `arkoviaeconomy.wallet` permission; it is not a deposit-history command.
+Shows your ten most recent withdrawal and starter-grant records, including operation ID, status, amount and full hash when available. It requires the base `arkoviaeconomy.wallet` permission; it is not a deposit-history command. If none exist, it displays “No withdrawals or starter grants recorded yet.”
 
 - `Queued`: a starter grant is waiting to be prepared.
 - `Held`: a signed outgoing payment is recorded and awaiting broadcast or confirmation; a withdrawal's gameplay funds have been reserved.
@@ -675,7 +679,7 @@ The off-chain Terraria economy should be treated separately from blockchain avai
 
 ### Option A — Install the Included DLL
 
-The `v1.3.1-rc.1` repository build includes a compiled plugin at:
+The `v1.3.2-rc.1` repository build includes a compiled plugin at:
 
 ```text
 release/ArkoviaEconomy.dll

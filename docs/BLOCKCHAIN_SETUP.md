@@ -1,4 +1,4 @@
-# Blockchain transfers, PINs, and signer setup (1.2.0 release candidate)
+# Blockchain transfers, PINs, and signer setup (1.3.2 release candidate)
 
 These features are implemented but disabled until configured. Stage-test with a small reserve before enabling player withdrawals. The plugin supports native ARKOS and the configured Monetary System currency.
 
@@ -92,13 +92,13 @@ Keep starter eligibility in a trusted group. It is not granted automatically to 
 ## Player workflow
 
 1. `/arkos wallet create` creates and links a public wallet, retaining the existing protected recovery flow.
-2. `/arkos security` (also `/arkos pin` or `/arkos withdraw`, without arguments) opens a short-lived private link. Keep that TShock account logged in.
+2. `/arkos security` (also `/arkos pin` or `/arkos withdraw`, without arguments) displays the portal address and a six-digit code. Open the address and sign in using your TShock account name and that code. Keep the account logged into Terraria. Codes are separate from transaction PINs.
 3. Set a 6–12 digit transaction PIN on the HTTPS page. Changing it requires the current PIN. Five incorrect attempts lock it for 15 minutes; lockouts survive restarts. Forgotten PINs require an operator-reviewed recovery procedure; there is no unauthenticated reset endpoint.
 4. To deposit, transfer the selected currency **from your linked wallet** to the reserve using your wallet software. Run `/arkos deposit <64-character-full-hash>` after confirmation. If confirmations are insufficient, retry the same command later. There is no address scanning or automatic discovery of unsubmitted deposits in this release.
 5. To withdraw, enter an amount and PIN on the portal, review the destination and server-paid fee, and confirm. Funds are removed from the spendable gameplay Wallet and durably held before submission. The Bank is untouched.
 6. `/arkos transfers` shows recent withdrawal/grant states and public full hashes. Confirmation completes settlement; it does not deduct the Wallet a second time.
 
-PINs are PBKDF2-SHA256 hashes with random salts and 600,000 iterations. Links use random 256-bit tokens stored server-side only as hashes. Tokens travel in URL fragments, then in Authorization headers. A new link invalidates the user's previous link; PIN setup invalidates any outstanding quote. Tokens expire after 1–10 configured minutes. Every portal request rechecks the current logged-in account and permissions.
+PINs are PBKDF2-SHA256 hashes with random salts and 600,000 iterations. Six-digit access codes are cryptographically random, account-bound, hashed in memory, single-use, and invalidated after five wrong guesses. The server permits at most 60 redemption attempts per minute globally, independent of proxy forwarding headers. Successful redemption creates a random 256-bit bearer credential held only in browser memory and sent in Authorization headers; no credential is put in the URL or browser storage. A new code invalidates the user's previous code and session; PIN setup invalidates any outstanding quote. Codes and sessions share the original 1–10 minute expiry set at code issuance, so signing in does not extend it. Refreshing/closing the page requires a new code. Every portal request rechecks the current logged-in account and permissions.
 
 ## Starter grants
 

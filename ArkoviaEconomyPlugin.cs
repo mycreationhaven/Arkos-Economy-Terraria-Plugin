@@ -36,7 +36,7 @@ public sealed class ArkoviaEconomyPlugin : TerrariaPlugin
         "Treasury-backed Arkovia economy framework for TShock/Terraria.";
 
     public override Version Version =>
-        new(1, 3, 1);
+        new(1, 3, 2);
 
     public ArkoviaEconomyPlugin(Main game)
         : base(game)

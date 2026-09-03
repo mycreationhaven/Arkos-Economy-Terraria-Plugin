@@ -25,15 +25,30 @@ public sealed class SecurityPortal(EconomyDatabase db, TransactionPinService pin
     private readonly SemaphoreSlim _requests = new(4, 4);
     private readonly CancellationTokenSource _cts = new();
     private Task? _loop;
-    public string CreateLink(int userId)
+    private readonly object _accessGate = new();
+    private readonly PortalAccessCodes _codes = new();
+    public string CreateAccessCode(int userId, string accountName)
     {
-        if (!config().SecurityPortal.Enabled) throw new InvalidOperationException("Security portal is not configured.");
-        foreach (var entry in _sessions.Where(e => e.Value.Expires < DateTime.UtcNow || e.Value.UserId == userId)) _sessions.TryRemove(entry.Key, out _);
-        if (_sessions.Count >= 1000) throw new InvalidOperationException("Security portal is busy.");
-        var token = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
-        _sessions[TransactionPinService.TokenHash(token)] = new(userId, DateTime.UtcNow.AddMinutes(config().SecurityPortal.SessionMinutes));
-        // Fragments are never sent in HTTP request URLs or referrers.
-        return config().SecurityPortal.PublicUrl + "#" + token;
+        lock (_accessGate)
+        {
+            if (!config().SecurityPortal.Enabled) throw new InvalidOperationException("Security portal is not configured.");
+            foreach (var entry in _sessions.Where(e => e.Value.Expires <= DateTime.UtcNow || e.Value.UserId == userId)) _sessions.TryRemove(entry.Key, out _);
+            if (_sessions.Count >= 1000) throw new InvalidOperationException("Security portal is busy.");
+            return _codes.Issue(userId, accountName, DateTime.UtcNow.AddMinutes(config().SecurityPortal.SessionMinutes));
+        }
+    }
+    private string Authenticate(string account, string code)
+    {
+        lock (_accessGate)
+        {
+            var access = _codes.Redeem(account, code);
+            if (!authorized(access.UserId, Permissions.Security)) throw new InvalidOperationException("Log into Terraria with your authorized account.");
+            foreach (var entry in _sessions.Where(e => e.Value.Expires <= DateTime.UtcNow || e.Value.UserId == access.UserId)) _sessions.TryRemove(entry.Key, out _);
+            if (_sessions.Count >= 1000) throw new InvalidOperationException("Security portal is busy.");
+            var token = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
+            _sessions[TransactionPinService.TokenHash(token)] = new(access.UserId, access.Expires);
+            return token;
+        }
     }
     public void Start()
     {
@@ -74,17 +89,23 @@ public sealed class SecurityPortal(EconomyDatabase db, TransactionPinService pin
                 throw new InvalidOperationException("Invalid request.");
             var expectedOrigin = new Uri(config().SecurityPortal.PublicUrl).GetLeftPart(UriPartial.Authority);
             if (request.Headers["Origin"] != expectedOrigin) throw new InvalidOperationException("Invalid origin.");
+            using var bodyReader = new StreamReader(request.InputStream, Encoding.UTF8);
+            var body = JObject.Parse(await bodyReader.ReadToEndAsync(timeout.Token));
+            var action = body.Value<string>("action");
+            if (action == "login")
+            {
+                var token = Authenticate(body.Value<string>("account") ?? "", body.Value<string>("code") ?? "");
+                await Send(response, Newtonsoft.Json.JsonConvert.SerializeObject(new { token }), "application/json", timeout.Token);
+                return;
+            }
             var bearer = request.Headers["Authorization"] ?? "";
             if (!bearer.StartsWith("Bearer ") || bearer.Length != 71 ||
                 !_sessions.TryGetValue(TransactionPinService.TokenHash(bearer[7..]), out var session) || session.Expires < DateTime.UtcNow)
-                throw new InvalidOperationException("Session expired. Request a new /arkos security link.");
+                throw new InvalidOperationException("Session expired. Run /arkos security and enter a new access code.");
             if (!authorized(session.UserId, Permissions.Security)) throw new InvalidOperationException("Log into Terraria with your authorized account.");
             if (!await session.Gate.WaitAsync(0)) throw new InvalidOperationException("A request is already in progress.");
             try
             {
-                using var reader = new StreamReader(request.InputStream, Encoding.UTF8);
-                var body = JObject.Parse(await reader.ReadToEndAsync(timeout.Token));
-                var action = body.Value<string>("action");
                 object result;
                 switch (action)
                 {
@@ -135,5 +156,5 @@ public sealed class SecurityPortal(EconomyDatabase db, TransactionPinService pin
     }
     private static async Task Send(HttpListenerResponse response, string content, string type, CancellationToken ct)
     { var bytes = Encoding.UTF8.GetBytes(content); response.ContentType = type; response.ContentLength64 = bytes.Length; await response.OutputStream.WriteAsync(bytes, ct); }
-    public void Dispose() { _cts.Cancel(); if (_listener.IsListening) _listener.Stop(); _listener.Close(); _sessions.Clear(); }
+    public void Dispose() { _cts.Cancel(); if (_listener.IsListening) _listener.Stop(); _listener.Close(); _sessions.Clear(); _codes.Clear(); }
 }
