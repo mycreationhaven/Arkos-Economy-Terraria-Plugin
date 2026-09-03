@@ -12,6 +12,15 @@
 
 These implementations require staging validation. Transfer-related features are disabled by default until the reserve, signer, portal, and permissions are configured. See [setup](BLOCKCHAIN_SETUP.md), [event rewards](EVENT_REWARDS.md), and [validation](../VALIDATION.md).
 
+## Implemented in 1.3.0 release candidate
+
+- Dedicated daily/size-rotated plugin files with retention.
+- Paid 100-level ranks, XP/combat-active gates, death demotion and broadcasts.
+- Additive rank permissions, owner-approved level-100 admin access and one-time item rewards.
+- Configurable NPC quests and jobs with persistent progress, daily quotas and atomic treasury payouts.
+
+See [progression](PROGRESSION.md) for deployment and scope.
+
 ## Remaining development
 
 - Full reserve/liability coverage reporting and operational dashboards.
@@ -24,6 +33,6 @@ These implementations require staging validation. Transfer-related features are 
 - Additional event-specific enemy classifications and final-wave reward policies.
 - Stronger identity-based anti-farming beyond permissions and per-account limits.
 - Broader atomicity migration for legacy gameplay/bank/PvP operations.
-- Shop/market item escrow, jobs, contracts, businesses, and player privacy controls.
+- Shop/market item escrow, mining/fishing/crafting objectives, contracts, businesses, and player privacy controls.
 
 Every money movement should use authoritative ledger-backed logic. Game rewards remain off-chain; signing authority stays outside the game server.

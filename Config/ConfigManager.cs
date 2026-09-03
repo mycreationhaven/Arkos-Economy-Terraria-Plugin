@@ -57,6 +57,7 @@ public sealed class ConfigManager
 
     private static void Validate(EconomyConfig cfg)
     {
+        cfg.Progression.Validate();
         cfg.CurrencyId = (cfg.CurrencyId ?? "").Trim();
         if (cfg.CurrencyId.Length > 0)
         {

@@ -95,12 +95,12 @@ public sealed class GameplayEconomyHandler : IDisposable
 
         if (SourcePlayerIndexField == null)
         {
-            TShock.Log.ConsoleWarn(
+            ArkoviaEconomy.Core.EconomyLog.Warn(
                 "[ArkoviaEconomy] PvP killer attribution is unavailable. " +
                 "PvP currency transfers will fail closed.");
         }
 
-        TShock.Log?.ConsoleInfo(
+        ArkoviaEconomy.Core.EconomyLog.Info(
             "[ArkoviaEconomy] Gameplay death, PvP, NPC and boss " +
             "economy hooks registered.");
     }
@@ -173,7 +173,7 @@ public sealed class GameplayEconomyHandler : IDisposable
         }
         catch (Exception ex)
         {
-            TShock.Log.Error(
+            ArkoviaEconomy.Core.EconomyLog.Error(
                 $"[ArkoviaEconomy] NPC strike tracking failed: {ex}");
         }
     }
@@ -245,7 +245,7 @@ public sealed class GameplayEconomyHandler : IDisposable
             _dd2Id = "event:" + Guid.NewGuid().ToString("N");
         }
 
-        TShock.Log?.ConsoleInfo(
+        ArkoviaEconomy.Core.EconomyLog.Info(
             $"[ArkoviaEconomy] DD2 session started. " +
             $"Difficulty={_dd2Difficulty}, " +
             $"Ongoing={Terraria.GameContent.Events.DD2Event.Ongoing}.");
@@ -264,7 +264,7 @@ public sealed class GameplayEconomyHandler : IDisposable
             _dd2VictoryPending = false;
         }
 
-        TShock.Log?.ConsoleInfo(
+        ArkoviaEconomy.Core.EconomyLog.Info(
             "[ArkoviaEconomy] DD2 loss reported.");
     }
 
@@ -281,7 +281,7 @@ public sealed class GameplayEconomyHandler : IDisposable
 
         orig();
 
-        TShock.Log?.ConsoleInfo(
+        ArkoviaEconomy.Core.EconomyLog.Info(
             "[ArkoviaEconomy] DD2 WinInvasionInternal observed.");
     }
 
@@ -340,7 +340,7 @@ public sealed class GameplayEconomyHandler : IDisposable
             victoryPending &&
             !lossReported;
 
-        TShock.Log?.ConsoleInfo(
+        ArkoviaEconomy.Core.EconomyLog.Info(
             $"[ArkoviaEconomy] DD2 session ended. " +
             $"WinArgument={win}, " +
             $"VictoryPending={victoryPending}, " +
@@ -361,7 +361,7 @@ public sealed class GameplayEconomyHandler : IDisposable
                     duration.TotalSeconds >= cfg.EventRewards.MinimumDurationSeconds)
                     _economy.QueueEvent(eventId, name, cfg.ToAtomic(cfg.EventRewards.Pools.GetValueOrDefault(name)), contributions);
             }
-            catch (Exception ex) { TShock.Log?.ConsoleError("[ArkoviaEconomy] DD2 settlement: " + ex.Message); }
+            catch (Exception ex) { ArkoviaEconomy.Core.EconomyLog.Error("[ArkoviaEconomy] DD2 settlement: " + ex.Message); }
         }
     }
 
@@ -392,7 +392,7 @@ public sealed class GameplayEconomyHandler : IDisposable
                 if (!cfg.GameplayEconomy.LogNpcRewardDecisions)
                     return;
 
-                TShock.Log?.ConsoleInfo(
+                ArkoviaEconomy.Core.EconomyLog.Info(
                     $"[ArkoviaEconomy] NPC reward decision: " +
                     $"NPC={npcName}, NetID={npc.netID}, " +
                     $"WhoAmI={npc.whoAmI}, Boss={npc.boss}, " +
@@ -553,7 +553,7 @@ public sealed class GameplayEconomyHandler : IDisposable
         }
         catch (Exception ex)
         {
-            TShock.Log.Error(
+            ArkoviaEconomy.Core.EconomyLog.Error(
                 $"[ArkoviaEconomy] NPC reward handler failed: {ex}");
         }
     }
@@ -658,7 +658,7 @@ public sealed class GameplayEconomyHandler : IDisposable
         {
             // Floating text is cosmetic only. Never allow a visual failure
             // to interfere with the economy transaction itself.
-            TShock.Log.ConsoleWarn(
+            ArkoviaEconomy.Core.EconomyLog.Warn(
                 $"[ArkoviaEconomy] Floating currency text failed " +
                 $"for {player.Name}: {ex.Message}");
         }
@@ -767,7 +767,7 @@ public sealed class GameplayEconomyHandler : IDisposable
         }
         catch (Exception ex)
         {
-            TShock.Log.Error(
+            ArkoviaEconomy.Core.EconomyLog.Error(
                 $"[ArkoviaEconomy] Gameplay death handler failed: {ex}");
         }
     }
@@ -878,7 +878,7 @@ public sealed class GameplayEconomyHandler : IDisposable
             killerIndex >= TShock.Players.Length ||
             killerIndex == victim.Index)
         {
-            TShock.Log.ConsoleWarn(
+            ArkoviaEconomy.Core.EconomyLog.Warn(
                 $"[ArkoviaEconomy] PvP death for {victim.Name} " +
                 "had no valid killer attribution. No currency moved.");
 

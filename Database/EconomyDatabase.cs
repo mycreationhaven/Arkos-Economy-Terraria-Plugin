@@ -116,7 +116,7 @@ public sealed partial class EconomyDatabase
             if (!cfg.AcceptExistingBalancesForCurrencyChange)
                 throw new InvalidOperationException("Changing currency would relabel existing balances. Back up the database, then explicitly set AcceptExistingBalancesForCurrencyChange=true to preserve numeric balances in the new currency.");
             SetState("economy.previous_denomination", saved);
-            TShock.Log?.ConsoleWarn($"[ArkoviaEconomy] Explicit currency change {saved} -> {desired}; existing off-chain amounts retained without conversion.");
+            ArkoviaEconomy.Core.EconomyLog.Warn($"[ArkoviaEconomy] Explicit currency change {saved} -> {desired}; existing off-chain amounts retained without conversion.");
         }
         SetState(key, desired);
     }

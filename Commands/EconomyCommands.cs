@@ -330,7 +330,7 @@ public sealed class EconomyCommands
             }
             catch (Exception ex)
             {
-                TShock.Log.Error(
+                ArkoviaEconomy.Core.EconomyLog.Error(
                     $"[ArkoviaEconomy] Recovery claim reissue failed for " +
                     $"TShock user ID {userId}. Error: {ex.Message}");
 
@@ -364,7 +364,7 @@ public sealed class EconomyCommands
             args.Player.SendWarningMessage(
                 "Save your recovery secret securely when it is displayed.");
 
-            TShock.Log.ConsoleInfo(
+            ArkoviaEconomy.Core.EconomyLog.Info(
                 $"[ArkoviaEconomy] Recovery claim issued for " +
                 $"TShock user ID {userId}. " +
                 $"Public address: {wallet.AccountRS}.");
@@ -500,7 +500,7 @@ public sealed class EconomyCommands
                 // The wallet itself already exists at this point.
                 // Keep the recovery file so the secret is not lost.
                 // Never log the recovery secret or internal API key.
-                TShock.Log.Error(
+                ArkoviaEconomy.Core.EconomyLog.Error(
                     $"[ArkoviaEconomy] Wallet claim setup failed for " +
                     $"TShock user ID {userId}. Error: {ex.Message}");
             }
@@ -546,7 +546,7 @@ public sealed class EconomyCommands
                     "Contact a server administrator before using this wallet.");
             }
 
-            TShock.Log.ConsoleInfo(
+            ArkoviaEconomy.Core.EconomyLog.Info(
                 $"[ArkoviaEconomy] Wallet created for TShock user ID {userId}. " +
                 $"Public address: {generated.AccountRS}. " +
                 (claim is not null
@@ -685,7 +685,7 @@ public sealed class EconomyCommands
         }
         catch (Exception ex)
         {
-            TShock.Log.Error(
+            ArkoviaEconomy.Core.EconomyLog.Error(
                 $"[ArkoviaEconomy] On-chain balance lookup failed: " +
                 $"{ex.Message}");
 

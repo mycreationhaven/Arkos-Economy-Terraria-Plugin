@@ -62,7 +62,7 @@ public sealed class WorldEventTracker(TerrariaPlugin plugin, EconomyService econ
             else _active.Clear();
             _lastInvasion = Main.invasionType; _lastDay = Main.dayTime;
         }
-        catch (Exception ex) { TShock.Log.ConsoleError("[ArkoviaEconomy] Event tracking: " + ex.Message); }
+        catch (Exception ex) { ArkoviaEconomy.Core.EconomyLog.Error("[ArkoviaEconomy] Event tracking: " + ex.Message); }
     }
     public void Track(int userId, NPC npc, int damage)
     {
@@ -84,7 +84,7 @@ public sealed class WorldEventTracker(TerrariaPlugin plugin, EconomyService econ
             (DateTime.UtcNow - e.Started).TotalSeconds < cfg.EventRewards.MinimumDurationSeconds) return;
         var pool = cfg.ToAtomic(cfg.EventRewards.Pools.GetValueOrDefault(e.Name));
         if (economy.QueueEvent(e.Id, e.Name, pool, e.Damage))
-            TShock.Log.ConsoleInfo($"[ArkoviaEconomy] {e.Name} completed; reward pool queued for atomic settlement.");
+            ArkoviaEconomy.Core.EconomyLog.Info($"[ArkoviaEconomy] {e.Name} completed; reward pool queued for atomic settlement.");
     }
     public void Dispose() { ServerApi.Hooks.GameUpdate.Deregister(plugin, Update); _active.Clear(); }
 }

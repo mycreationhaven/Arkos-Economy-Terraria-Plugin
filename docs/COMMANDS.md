@@ -245,3 +245,7 @@ Changing `CurrencyName` or `CurrencySymbol` does not automatically rename that c
 | `/eco releaseexpired <operationId>` | Guarded treasury-admin reconciliation of an expired, absent payment |
 
 See BLOCKCHAIN_SETUP.md for permissions, PIN requirements, sponsored fees, confirmations, expiry rules, and setup. `/bank deposit` and `/bank withdraw` remain off-chain.
+
+## Progression commands
+
+See [ranks, quests and jobs](PROGRESSION.md) for `/rank`, `/rankup`, `/rankadmin`, `/quests`, `/jobs` and their permissions.

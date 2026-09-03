@@ -137,5 +137,960 @@
     "ListenUrl": "http://127.0.0.1:4891/",
     "PublicUrl": "",
     "SessionMinutes": 5
+  },
+  "Progression": {
+    "Enabled": true,
+    "DailyKillLimit": 500,
+    "KillCooldownSeconds": 5,
+    "RankCooldownHours": 12,
+    "RequireAdminApprovalForLevel100": true,
+    "Ranks": [
+      {
+        "Level": 1,
+        "Name": "Level 1",
+        "Cost": 0.0,
+        "Experience": 0,
+        "ActiveMinutes": 0,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 2,
+        "Name": "Level 2",
+        "Cost": 0.01,
+        "Experience": 25,
+        "ActiveMinutes": 10,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 3,
+        "Name": "Level 3",
+        "Cost": 0.04,
+        "Experience": 100,
+        "ActiveMinutes": 40,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 4,
+        "Name": "Level 4",
+        "Cost": 0.09,
+        "Experience": 225,
+        "ActiveMinutes": 90,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 5,
+        "Name": "Level 5",
+        "Cost": 0.16,
+        "Experience": 400,
+        "ActiveMinutes": 160,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 6,
+        "Name": "Level 6",
+        "Cost": 0.25,
+        "Experience": 625,
+        "ActiveMinutes": 250,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 7,
+        "Name": "Level 7",
+        "Cost": 0.36,
+        "Experience": 900,
+        "ActiveMinutes": 360,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 8,
+        "Name": "Level 8",
+        "Cost": 0.49,
+        "Experience": 1225,
+        "ActiveMinutes": 490,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 9,
+        "Name": "Level 9",
+        "Cost": 0.64,
+        "Experience": 1600,
+        "ActiveMinutes": 640,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 10,
+        "Name": "Level 10",
+        "Cost": 0.81,
+        "Experience": 2025,
+        "ActiveMinutes": 810,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 11,
+        "Name": "Level 11",
+        "Cost": 1.0,
+        "Experience": 2500,
+        "ActiveMinutes": 1000,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 12,
+        "Name": "Level 12",
+        "Cost": 1.21,
+        "Experience": 3025,
+        "ActiveMinutes": 1210,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 13,
+        "Name": "Level 13",
+        "Cost": 1.44,
+        "Experience": 3600,
+        "ActiveMinutes": 1440,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 14,
+        "Name": "Level 14",
+        "Cost": 1.69,
+        "Experience": 4225,
+        "ActiveMinutes": 1690,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 15,
+        "Name": "Level 15",
+        "Cost": 1.96,
+        "Experience": 4900,
+        "ActiveMinutes": 1960,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 16,
+        "Name": "Level 16",
+        "Cost": 2.25,
+        "Experience": 5625,
+        "ActiveMinutes": 2250,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 17,
+        "Name": "Level 17",
+        "Cost": 2.56,
+        "Experience": 6400,
+        "ActiveMinutes": 2560,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 18,
+        "Name": "Level 18",
+        "Cost": 2.89,
+        "Experience": 7225,
+        "ActiveMinutes": 2890,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 19,
+        "Name": "Level 19",
+        "Cost": 3.24,
+        "Experience": 8100,
+        "ActiveMinutes": 3240,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 20,
+        "Name": "Level 20",
+        "Cost": 3.61,
+        "Experience": 9025,
+        "ActiveMinutes": 3610,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 21,
+        "Name": "Level 21",
+        "Cost": 4.0,
+        "Experience": 10000,
+        "ActiveMinutes": 4000,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 22,
+        "Name": "Level 22",
+        "Cost": 4.41,
+        "Experience": 11025,
+        "ActiveMinutes": 4410,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 23,
+        "Name": "Level 23",
+        "Cost": 4.84,
+        "Experience": 12100,
+        "ActiveMinutes": 4840,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 24,
+        "Name": "Level 24",
+        "Cost": 5.29,
+        "Experience": 13225,
+        "ActiveMinutes": 5290,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 25,
+        "Name": "Level 25",
+        "Cost": 5.76,
+        "Experience": 14400,
+        "ActiveMinutes": 5760,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 26,
+        "Name": "Level 26",
+        "Cost": 6.25,
+        "Experience": 15625,
+        "ActiveMinutes": 6250,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 27,
+        "Name": "Level 27",
+        "Cost": 6.76,
+        "Experience": 16900,
+        "ActiveMinutes": 6760,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 28,
+        "Name": "Level 28",
+        "Cost": 7.29,
+        "Experience": 18225,
+        "ActiveMinutes": 7290,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 29,
+        "Name": "Level 29",
+        "Cost": 7.84,
+        "Experience": 19600,
+        "ActiveMinutes": 7840,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 30,
+        "Name": "Level 30",
+        "Cost": 8.41,
+        "Experience": 21025,
+        "ActiveMinutes": 8410,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 31,
+        "Name": "Level 31",
+        "Cost": 9.0,
+        "Experience": 22500,
+        "ActiveMinutes": 9000,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 32,
+        "Name": "Level 32",
+        "Cost": 9.61,
+        "Experience": 24025,
+        "ActiveMinutes": 9610,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 33,
+        "Name": "Level 33",
+        "Cost": 10.24,
+        "Experience": 25600,
+        "ActiveMinutes": 10240,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 34,
+        "Name": "Level 34",
+        "Cost": 10.89,
+        "Experience": 27225,
+        "ActiveMinutes": 10890,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 35,
+        "Name": "Level 35",
+        "Cost": 11.56,
+        "Experience": 28900,
+        "ActiveMinutes": 11560,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 36,
+        "Name": "Level 36",
+        "Cost": 12.25,
+        "Experience": 30625,
+        "ActiveMinutes": 12250,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 37,
+        "Name": "Level 37",
+        "Cost": 12.96,
+        "Experience": 32400,
+        "ActiveMinutes": 12960,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 38,
+        "Name": "Level 38",
+        "Cost": 13.69,
+        "Experience": 34225,
+        "ActiveMinutes": 13690,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 39,
+        "Name": "Level 39",
+        "Cost": 14.44,
+        "Experience": 36100,
+        "ActiveMinutes": 14440,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 40,
+        "Name": "Level 40",
+        "Cost": 15.21,
+        "Experience": 38025,
+        "ActiveMinutes": 15210,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 41,
+        "Name": "Level 41",
+        "Cost": 16.0,
+        "Experience": 40000,
+        "ActiveMinutes": 16000,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 42,
+        "Name": "Level 42",
+        "Cost": 16.81,
+        "Experience": 42025,
+        "ActiveMinutes": 16810,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 43,
+        "Name": "Level 43",
+        "Cost": 17.64,
+        "Experience": 44100,
+        "ActiveMinutes": 17640,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 44,
+        "Name": "Level 44",
+        "Cost": 18.49,
+        "Experience": 46225,
+        "ActiveMinutes": 18490,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 45,
+        "Name": "Level 45",
+        "Cost": 19.36,
+        "Experience": 48400,
+        "ActiveMinutes": 19360,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 46,
+        "Name": "Level 46",
+        "Cost": 20.25,
+        "Experience": 50625,
+        "ActiveMinutes": 20250,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 47,
+        "Name": "Level 47",
+        "Cost": 21.16,
+        "Experience": 52900,
+        "ActiveMinutes": 21160,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 48,
+        "Name": "Level 48",
+        "Cost": 22.09,
+        "Experience": 55225,
+        "ActiveMinutes": 22090,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 49,
+        "Name": "Level 49",
+        "Cost": 23.04,
+        "Experience": 57600,
+        "ActiveMinutes": 23040,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 50,
+        "Name": "Level 50",
+        "Cost": 24.01,
+        "Experience": 60025,
+        "ActiveMinutes": 24010,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 51,
+        "Name": "Level 51",
+        "Cost": 25.0,
+        "Experience": 62500,
+        "ActiveMinutes": 25000,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 52,
+        "Name": "Level 52",
+        "Cost": 26.01,
+        "Experience": 65025,
+        "ActiveMinutes": 26010,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 53,
+        "Name": "Level 53",
+        "Cost": 27.04,
+        "Experience": 67600,
+        "ActiveMinutes": 27040,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 54,
+        "Name": "Level 54",
+        "Cost": 28.09,
+        "Experience": 70225,
+        "ActiveMinutes": 28090,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 55,
+        "Name": "Level 55",
+        "Cost": 29.16,
+        "Experience": 72900,
+        "ActiveMinutes": 29160,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 56,
+        "Name": "Level 56",
+        "Cost": 30.25,
+        "Experience": 75625,
+        "ActiveMinutes": 30250,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 57,
+        "Name": "Level 57",
+        "Cost": 31.36,
+        "Experience": 78400,
+        "ActiveMinutes": 31360,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 58,
+        "Name": "Level 58",
+        "Cost": 32.49,
+        "Experience": 81225,
+        "ActiveMinutes": 32490,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 59,
+        "Name": "Level 59",
+        "Cost": 33.64,
+        "Experience": 84100,
+        "ActiveMinutes": 33640,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 60,
+        "Name": "Level 60",
+        "Cost": 34.81,
+        "Experience": 87025,
+        "ActiveMinutes": 34810,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 61,
+        "Name": "Level 61",
+        "Cost": 36.0,
+        "Experience": 90000,
+        "ActiveMinutes": 36000,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 62,
+        "Name": "Level 62",
+        "Cost": 37.21,
+        "Experience": 93025,
+        "ActiveMinutes": 37210,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 63,
+        "Name": "Level 63",
+        "Cost": 38.44,
+        "Experience": 96100,
+        "ActiveMinutes": 38440,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 64,
+        "Name": "Level 64",
+        "Cost": 39.69,
+        "Experience": 99225,
+        "ActiveMinutes": 39690,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 65,
+        "Name": "Level 65",
+        "Cost": 40.96,
+        "Experience": 102400,
+        "ActiveMinutes": 40960,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 66,
+        "Name": "Level 66",
+        "Cost": 42.25,
+        "Experience": 105625,
+        "ActiveMinutes": 42250,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 67,
+        "Name": "Level 67",
+        "Cost": 43.56,
+        "Experience": 108900,
+        "ActiveMinutes": 43560,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 68,
+        "Name": "Level 68",
+        "Cost": 44.89,
+        "Experience": 112225,
+        "ActiveMinutes": 44890,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 69,
+        "Name": "Level 69",
+        "Cost": 46.24,
+        "Experience": 115600,
+        "ActiveMinutes": 46240,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 70,
+        "Name": "Level 70",
+        "Cost": 47.61,
+        "Experience": 119025,
+        "ActiveMinutes": 47610,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 71,
+        "Name": "Level 71",
+        "Cost": 49.0,
+        "Experience": 122500,
+        "ActiveMinutes": 49000,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 72,
+        "Name": "Level 72",
+        "Cost": 50.41,
+        "Experience": 126025,
+        "ActiveMinutes": 50410,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 73,
+        "Name": "Level 73",
+        "Cost": 51.84,
+        "Experience": 129600,
+        "ActiveMinutes": 51840,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 74,
+        "Name": "Level 74",
+        "Cost": 53.29,
+        "Experience": 133225,
+        "ActiveMinutes": 53290,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 75,
+        "Name": "Level 75",
+        "Cost": 54.76,
+        "Experience": 136900,
+        "ActiveMinutes": 54760,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 76,
+        "Name": "Level 76",
+        "Cost": 56.25,
+        "Experience": 140625,
+        "ActiveMinutes": 56250,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 77,
+        "Name": "Level 77",
+        "Cost": 57.76,
+        "Experience": 144400,
+        "ActiveMinutes": 57760,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 78,
+        "Name": "Level 78",
+        "Cost": 59.29,
+        "Experience": 148225,
+        "ActiveMinutes": 59290,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 79,
+        "Name": "Level 79",
+        "Cost": 60.84,
+        "Experience": 152100,
+        "ActiveMinutes": 60840,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 80,
+        "Name": "Level 80",
+        "Cost": 62.41,
+        "Experience": 156025,
+        "ActiveMinutes": 62410,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 81,
+        "Name": "Level 81",
+        "Cost": 64.0,
+        "Experience": 160000,
+        "ActiveMinutes": 64000,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 82,
+        "Name": "Level 82",
+        "Cost": 65.61,
+        "Experience": 164025,
+        "ActiveMinutes": 65610,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 83,
+        "Name": "Level 83",
+        "Cost": 67.24,
+        "Experience": 168100,
+        "ActiveMinutes": 67240,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 84,
+        "Name": "Level 84",
+        "Cost": 68.89,
+        "Experience": 172225,
+        "ActiveMinutes": 68890,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 85,
+        "Name": "Level 85",
+        "Cost": 70.56,
+        "Experience": 176400,
+        "ActiveMinutes": 70560,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 86,
+        "Name": "Level 86",
+        "Cost": 72.25,
+        "Experience": 180625,
+        "ActiveMinutes": 72250,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 87,
+        "Name": "Level 87",
+        "Cost": 73.96,
+        "Experience": 184900,
+        "ActiveMinutes": 73960,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 88,
+        "Name": "Level 88",
+        "Cost": 75.69,
+        "Experience": 189225,
+        "ActiveMinutes": 75690,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 89,
+        "Name": "Level 89",
+        "Cost": 77.44,
+        "Experience": 193600,
+        "ActiveMinutes": 77440,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 90,
+        "Name": "Level 90",
+        "Cost": 79.21,
+        "Experience": 198025,
+        "ActiveMinutes": 79210,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 91,
+        "Name": "Level 91",
+        "Cost": 81.0,
+        "Experience": 202500,
+        "ActiveMinutes": 81000,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 92,
+        "Name": "Level 92",
+        "Cost": 82.81,
+        "Experience": 207025,
+        "ActiveMinutes": 82810,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 93,
+        "Name": "Level 93",
+        "Cost": 84.64,
+        "Experience": 211600,
+        "ActiveMinutes": 84640,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 94,
+        "Name": "Level 94",
+        "Cost": 86.49,
+        "Experience": 216225,
+        "ActiveMinutes": 86490,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 95,
+        "Name": "Level 95",
+        "Cost": 88.36,
+        "Experience": 220900,
+        "ActiveMinutes": 88360,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 96,
+        "Name": "Level 96",
+        "Cost": 90.25,
+        "Experience": 225625,
+        "ActiveMinutes": 90250,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 97,
+        "Name": "Level 97",
+        "Cost": 92.16,
+        "Experience": 230400,
+        "ActiveMinutes": 92160,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 98,
+        "Name": "Level 98",
+        "Cost": 94.09,
+        "Experience": 235225,
+        "ActiveMinutes": 94090,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 99,
+        "Name": "Level 99",
+        "Cost": 96.04,
+        "Experience": 240100,
+        "ActiveMinutes": 96040,
+        "Permissions": [],
+        "Items": []
+      },
+      {
+        "Level": 100,
+        "Name": "Server Admin",
+        "Cost": 98.01,
+        "Experience": 245025,
+        "ActiveMinutes": 98010,
+        "Permissions": [
+          "*"
+        ],
+        "Items": []
+      }
+    ],
+    "Quests": [
+      {
+        "Id": "daily-hunt",
+        "Name": "Daily monster hunt",
+        "NpcIds": [],
+        "RequiredKills": 100,
+        "Reward": 5,
+        "Experience": 100,
+        "DailyLimit": 1
+      },
+      {
+        "Id": "slime-patrol",
+        "Name": "Slime patrol",
+        "NpcIds": [
+          1
+        ],
+        "RequiredKills": 50,
+        "Reward": 2,
+        "Experience": 50,
+        "DailyLimit": 1
+      }
+    ],
+    "Jobs": [
+      {
+        "Id": "hunter",
+        "Name": "Monster hunter",
+        "NpcIds": [],
+        "RequiredKills": 25,
+        "Reward": 1,
+        "Experience": 25,
+        "DailyLimit": 10
+      },
+      {
+        "Id": "slimekeeper",
+        "Name": "Slime keeper",
+        "NpcIds": [
+          1
+        ],
+        "RequiredKills": 20,
+        "Reward": 1,
+        "Experience": 20,
+        "DailyLimit": 10
+      }
+    ]
   }
 }

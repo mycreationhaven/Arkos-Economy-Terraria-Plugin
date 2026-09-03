@@ -123,7 +123,7 @@ public sealed class ArkoviaFundingSynchronizer : IDisposable
                     "arkovia.last_sync_utc",
                     LastSuccessUtc.Value.ToString("O"));
 
-                TShock.Log.ConsoleInfo(
+                ArkoviaEconomy.Core.EconomyLog.Info(
                     "[ArkoviaEconomy] Arkovia ledger returned no entries. " +
                     $"Initialized confirmed-balance baseline at {currentBalance} atomic units.");
 
@@ -156,7 +156,7 @@ public sealed class ArkoviaFundingSynchronizer : IDisposable
 
                     credited++;
 
-                    TShock.Log.ConsoleInfo(
+                    ArkoviaEconomy.Core.EconomyLog.Info(
                         "[ArkoviaEconomy] Credited Terraria Treasury from " +
                         $"confirmed Arkovia balance growth. " +
                         $"Previous={previousBalance}, Current={currentBalance}, " +
@@ -165,7 +165,7 @@ public sealed class ArkoviaFundingSynchronizer : IDisposable
             }
             else if (currentBalance < previousBalance)
             {
-                TShock.Log.ConsoleWarn(
+                ArkoviaEconomy.Core.EconomyLog.Warn(
                     "[ArkoviaEconomy] Arkovia source balance decreased. " +
                     $"HighWater={previousBalance}, Current={currentBalance}. " +
                     "No Terraria debit was applied and the funding high-water mark was retained.");
@@ -210,7 +210,7 @@ public sealed class ArkoviaFundingSynchronizer : IDisposable
             catch (Exception ex)
             {
                 LastStatus = "Sync error: " + ex.Message;
-                TShock.Log.ConsoleError("[ArkoviaEconomy] " + LastStatus);
+                ArkoviaEconomy.Core.EconomyLog.Error("[ArkoviaEconomy] " + LastStatus);
             }
             try { await Task.Delay(TimeSpan.FromSeconds(Math.Max(15, _config().Arkovia.PollSeconds)), ct); }
             catch (OperationCanceledException) { break; }

@@ -4,6 +4,7 @@ namespace ArkoviaEconomy.Config;
 
 public sealed class EconomyConfig
 {
+    public ArkoviaEconomy.Progression.ProgressionConfig Progression { get; set; } = new();
     // Off-chain Decimals is independent of node currency decimals and never auto-rescaled.
     public BlockchainTransferConfig Transfers { get; set; } = new();
     public SecurityPortalConfig SecurityPortal { get; set; } = new();

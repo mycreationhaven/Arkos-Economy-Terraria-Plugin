@@ -15,6 +15,7 @@ namespace ArkoviaEconomy;
 [ApiVersion(2, 1)]
 public sealed class ArkoviaEconomyPlugin : TerrariaPlugin
 {
+    private ArkoviaEconomy.Progression.ProgressionHandler? _progression;
     private ConfigManager? _config;
     private EconomyDatabase? _database;
     private EconomyService? _economy;
@@ -35,7 +36,7 @@ public sealed class ArkoviaEconomyPlugin : TerrariaPlugin
         "Treasury-backed Arkovia economy framework for TShock/Terraria.";
 
     public override Version Version =>
-        new(1, 2, 0);
+        new(1, 3, 0);
 
     public ArkoviaEconomyPlugin(Main game)
         : base(game)
@@ -45,6 +46,7 @@ public sealed class ArkoviaEconomyPlugin : TerrariaPlugin
     public override void Initialize()
     {
         _config = new ConfigManager();
+        EconomyLog.Initialize(_config.DirectoryPath);
         _config.Load();
 
         _database =
@@ -106,10 +108,15 @@ public sealed class ArkoviaEconomyPlugin : TerrariaPlugin
 
         _gameplay.Register();
 
+        _progression = new ArkoviaEconomy.Progression.ProgressionHandler(this,
+            new ArkoviaEconomy.Progression.ProgressionService(_database, _economy, () => _config.Current),
+            _economy, () => _config.Current);
+        _progression.Register();
+
         _sync.Start();
         _transfers.Start();
 
-        TShock.Log.ConsoleInfo(
+        ArkoviaEconomy.Core.EconomyLog.Info(
             $"[ArkoviaEconomy] v{Version} initialized. " +
             $"Treasury source: " +
             $"{_config.Current.Arkovia.CommunityDevelopmentAccount}");
@@ -127,6 +134,7 @@ public sealed class ArkoviaEconomyPlugin : TerrariaPlugin
 
             _commands.Clear();
 
+            _progression?.Dispose();
             _gameplay?.Dispose();
             _portal?.Dispose();
             _transfers?.Dispose();
