@@ -58,6 +58,36 @@ public sealed class ConfigManager
     private static void Validate(EconomyConfig cfg)
     {
         cfg.Progression.Validate();
+        if (cfg.Voting.MaximumRewardedVotesPerAccountPerDay < 1 || cfg.Voting.ClaimCooldownSeconds < 1)
+            throw new InvalidOperationException("Invalid voting limits.");
+        var providerIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var provider in cfg.Voting.Providers)
+        {
+            provider.Id = (provider.Id ?? "").Trim().ToLowerInvariant();
+            provider.Type = (provider.Type ?? "").Trim();
+            provider.DisplayName = string.IsNullOrWhiteSpace(provider.DisplayName) ? provider.Id : provider.DisplayName.Trim();
+            provider.ServerId = (provider.ServerId ?? "").Trim();
+            provider.ApiKey = (provider.ApiKey ?? "").Trim();
+            provider.VotingUrl = (provider.VotingUrl ?? "").Trim();
+            if (!providerIds.Add(provider.Id) || provider.Id.Length is < 1 or > 40 ||
+                !provider.Id.All(c => char.IsLetterOrDigit(c) || c == '-'))
+                throw new InvalidOperationException("Voting provider IDs must be unique letters, numbers or hyphens.");
+            if (provider.Type is not ("TerrariaServers" or "TServerWeb"))
+                throw new InvalidOperationException($"Unsupported voting provider type: {provider.Type}");
+            if (provider.MaximumClaimsPerAccountPerDay != 1 || provider.TimeoutSeconds is < 3 or > 30 ||
+                provider.Rewards.CurrencyAmount < 0)
+                throw new InvalidOperationException($"Invalid voting configuration for {provider.Id}.");
+            if (provider.Enabled && ((provider.Type == "TServerWeb" && provider.ServerId.Length == 0) ||
+                (provider.Type == "TerrariaServers" && provider.ApiKey.Length == 0)))
+                throw new InvalidOperationException($"Enabled voting provider {provider.Id} is missing ServerId or ApiKey.");
+            if (provider.VotingUrl.Length > 0 && (!Uri.TryCreate(provider.VotingUrl, UriKind.Absolute, out var voteUri) || voteUri.Scheme != "https"))
+                throw new InvalidOperationException($"VotingUrl for {provider.Id} must be HTTPS.");
+            if (provider.Rewards.Items.Any(i => i.ItemId < 1 || i.Stack < 1 || i.Stack > 9999 || i.Prefix < 0))
+                throw new InvalidOperationException($"Invalid vote item reward for {provider.Id}.");
+            if (provider.Rewards.Groups.Any(g => string.IsNullOrWhiteSpace(g.Group) || g.DurationMinutes < 1 ||
+                !g.Group.All(c => char.IsLetterOrDigit(c) || c is '-' or '_')))
+                throw new InvalidOperationException($"Invalid vote group reward for {provider.Id}.");
+        }
         cfg.CurrencyId = (cfg.CurrencyId ?? "").Trim();
         if (cfg.CurrencyId.Length > 0)
         {
