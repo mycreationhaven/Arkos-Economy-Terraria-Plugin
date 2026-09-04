@@ -643,6 +643,7 @@ arkoviaeconomy.blockchain.withdraw
 arkoviaeconomy.blockchain.starter
 arkoviaeconomy.treasury.view
 arkoviaeconomy.wallet
+arkoviaeconomy.vote
 
 arkoviaeconomy.admin
 arkoviaeconomy.admin.adjust
@@ -654,7 +655,7 @@ arkoviaeconomy.admin.audit
 Example player/trusted-group permissions:
 
 ```text
-/group addperm trusted arkoviaeconomy.use,arkoviaeconomy.pay,arkoviaeconomy.bank,arkoviaeconomy.wallet
+/group addperm trusted arkoviaeconomy.use,arkoviaeconomy.pay,arkoviaeconomy.bank,arkoviaeconomy.wallet,arkoviaeconomy.vote
 ```
 
 Grant progression commands separately as appropriate:
@@ -695,7 +696,7 @@ The off-chain Terraria economy should be treated separately from blockchain avai
 
 ### Option A — Install the Included DLL
 
-The `v1.3.2-rc.1` repository build includes a compiled plugin at:
+The `v1.4.0-rc.1` repository build includes a compiled plugin at:
 
 ```text
 release/ArkoviaEconomy.dll
@@ -741,6 +742,12 @@ Copy that DLL into the TShock `ServerPlugins` directory and restart TShock.
 
 The `release/` directory contains the precompiled plugin for operators who do not want to build the project themselves.
 
+The included DLL matches the `v1.4.0-rc.1` source, targets TShock 6.1.0 on .NET 9, and includes voting rewards. Its SHA-256 checksum is:
+
+```text
+e7b8e89e56975e9863de38f6e510e65154d6f3dc50624d8d944e8c42f0df5968
+```
+
 The source code used to build the plugin is included in the repository so operators can inspect and compile it independently.
 
 For security-sensitive or production deployments, building from reviewed source is encouraged.
@@ -778,6 +785,7 @@ Important configuration areas include:
 - transfer limits and fees
 - banking behavior
 - treasury solvency rules
+- voting providers, daily caps, currency, item and temporary-group rewards
 - gameplay rewards
 - death penalties
 - PvP economy settings
@@ -832,6 +840,7 @@ After starting TShock, verify that:
 6. Gameplay rewards behave according to configuration.
 7. Death and PvP deductions never create negative Wallet balances.
 8. Blockchain commands work only when the Arkovia integration is correctly configured.
+9. After configuring voting, `/vote links` shows only enabled providers, `/vote status` shows UTC claim limits, and a small staging claim produces exactly one reward and one persistent claim record.
 
 Test economic changes with small values before opening a production server to players.
 
@@ -1173,7 +1182,7 @@ docs/SECURITY.md
 
 ## 🛣️ Roadmap
 
-Version `v1.3.0-rc.1` includes dedicated plugin logs, paid ranks, death demotion, rank permissions/items, NPC quests and jobs, plus the previously implemented event, deposit, withdrawal, starter-grant and PIN features. Live game-server/node staging remains required before enabling blockchain spending.
+Version `v1.4.0-rc.1` includes Terraria-Servers.com and TServerWeb vote rewards, persistent claim protection, daily caps, configurable currency/items/temporary groups, dedicated plugin logs, paid ranks, quests and jobs, event rewards, deposits, withdrawals, starter grants, and PIN-protected transfer workflows. Live provider, game-server, and node staging remains required before production use.
 
 Future work includes full reserve/liability reports, automatic deposit discovery, external-wallet ownership linking, forgotten-PIN recovery tooling, boss-specific pools, active-encounter restart recovery, shop/market features, and mining/fishing/crafting job objectives. See [the current roadmap](docs/ROADMAP.md).
 
@@ -1193,16 +1202,29 @@ Arkos-Economy-Terraria-Plugin/
 ├── Core/
 │   └── EconomyService.cs
 ├── Database/
-│   └── EconomyDatabase.cs
+│   ├── EconomyDatabase.cs
+│   ├── SettlementDatabase.cs
+│   └── VoteDatabase.cs
 ├── Gameplay/
-│   └── GameplayEconomyHandler.cs
+│   ├── GameplayEconomyHandler.cs
+│   └── WorldEventTracker.cs
 ├── Integrations/
 │   ├── ArkoviaFundingSynchronizer.cs
 │   ├── ArkoviaNodeClient.cs
+│   ├── BlockchainTransferService.cs
+│   ├── TransferNodeClient.cs
 │   └── WalletClaimClient.cs
 ├── Models/
 │   ├── EconomyModels.cs
+│   ├── SettlementModels.cs
 │   └── WalletModels.cs
+├── Progression/
+├── Security/
+├── Voting/
+│   └── VoteRewardsService.cs
+├── services/
+│   └── ArkoviaSigner/
+├── tests/
 ├── docs/
 ├── examples/
 ├── release/
@@ -1237,6 +1259,8 @@ Additional documentation is available in the `docs/` directory:
 | [docs/PROGRESSION.md](docs/PROGRESSION.md) | Ranks, permissions, quests, jobs and default progression requirements |
 | [docs/LOGGING.md](docs/LOGGING.md) | Plugin log location, rotation and retention |
 | [docs/BLOCKCHAIN_SETUP.md](docs/BLOCKCHAIN_SETUP.md) | Transfer reserve, signer and HTTPS PIN portal deployment |
+| [docs/EVENT_REWARDS.md](docs/EVENT_REWARDS.md) | World event reward configuration and settlement rules |
+| [docs/VOTING.md](docs/VOTING.md) | Voting providers, commands, rewards, daily caps and deployment checklist |
 | `docs/ROADMAP.md` | Remaining development |
 
 ---
