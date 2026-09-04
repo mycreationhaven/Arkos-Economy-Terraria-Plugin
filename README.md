@@ -2,7 +2,7 @@
 
 > A treasury-backed Terraria economy with paid ranks, quests, jobs, gameplay rewards, banking, player blockchain wallets, and optional Arkovia blockchain integration.
 
-**Current repository source: `v1.4.0-rc.1` (release candidate).** The included DLL remains the prior validated build until the vote-reward release is compiled and staged. [Progression setup](docs/PROGRESSION.md) · [Vote rewards](docs/VOTING.md) · [Changelog](CHANGELOG.md) · [Validation](VALIDATION.md).
+**Current source and included DLL: `v1.4.0-rc.1` (release candidate).** This version adds configurable voting rewards for Terraria-Servers.com and TServerWeb. [Voting setup](docs/VOTING.md) · [Progression setup](docs/PROGRESSION.md) · [Commands](docs/COMMANDS.md) · [Changelog](CHANGELOG.md) · [Validation](VALIDATION.md).
 
 **Arkovia Economy** is an open-source economy plugin for Terraria servers running TShock.
 
@@ -47,6 +47,14 @@ Server operators can use the native **ARKOS** currency or customize the economy 
 | Terraria-Servers.com and TServerWeb vote rewards | ✅ Implemented — provider staging required |
 
 ---
+
+## New in v1.4.0-rc.1
+
+Players can now use `/vote` to view voting links, claim verified votes, check daily status, and complete the TServerWeb CAPTCHA flow. Server owners can independently configure provider links, ARKOS or custom-currency rewards, item rewards, temporary TShock group rewards, per-provider daily claims, and a combined daily cap.
+
+Vote claims require an authenticated TShock account and are stored persistently to prevent duplicate rewards after restarts. Providers remain disabled until the server owner configures them. See the complete [Voting Rewards Setup Guide](docs/VOTING.md).
+
+The compiled `release/ArkoviaEconomy.dll` now matches this `v1.4.0-rc.1` source and targets TShock 6.1.0 on .NET 9.
 
 ## New in v1.3.2-rc.1
 
