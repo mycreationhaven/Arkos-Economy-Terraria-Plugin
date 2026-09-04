@@ -9,6 +9,7 @@ using ArkoviaEconomy.Core;
 using ArkoviaEconomy.Database;
 using ArkoviaEconomy.Integrations;
 using ArkoviaEconomy.Gameplay;
+using ArkoviaEconomy.Voting;
 
 namespace ArkoviaEconomy;
 
@@ -25,6 +26,7 @@ public sealed class ArkoviaEconomyPlugin : TerrariaPlugin
     private GameplayEconomyHandler? _gameplay;
     private BlockchainTransferService? _transfers;
     private SecurityPortal? _portal;
+    private VoteRewardsService? _voting;
     private List<Command> _commands = new();
 
     public override string Name => "Arkovia Economy";
@@ -36,7 +38,7 @@ public sealed class ArkoviaEconomyPlugin : TerrariaPlugin
         "Treasury-backed Arkovia economy framework for TShock/Terraria.";
 
     public override Version Version =>
-        new(1, 3, 2);
+        new(1, 4, 0);
 
     public ArkoviaEconomyPlugin(Main game)
         : base(game)
@@ -94,6 +96,9 @@ public sealed class ArkoviaEconomyPlugin : TerrariaPlugin
         _commands =
             handlers.Build().ToList();
 
+        _voting = new VoteRewardsService(_database, _economy, () => _config.Current);
+        _commands.AddRange(_voting.BuildCommands());
+
         TShockAPI.Commands.ChatCommands.AddRange(
             _commands);
 
@@ -140,6 +145,7 @@ public sealed class ArkoviaEconomyPlugin : TerrariaPlugin
             _transfers?.Dispose();
             _sync?.Dispose();
             _node?.Dispose();
+            _voting?.Dispose();
 
             ArkoviaEconomyApi.Instance = null;
         }
