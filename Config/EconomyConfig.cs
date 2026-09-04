@@ -9,6 +9,7 @@ public sealed class EconomyConfig
     public BlockchainTransferConfig Transfers { get; set; } = new();
     public SecurityPortalConfig SecurityPortal { get; set; } = new();
     public EventRewardsConfig EventRewards { get; set; } = new();
+    public VotingConfig Voting { get; set; } = new();
 
     public string CurrencyId { get; set; } = "";
     public bool AcceptExistingBalancesForCurrencyChange { get; set; } = false;
@@ -66,6 +67,54 @@ public sealed class EconomyConfig
         for (var i = 0; i < n; i++) value = checked(value * 10);
         return value;
     }
+}
+
+public sealed class VotingConfig
+{
+    public bool Enabled { get; set; } = false;
+    public int MaximumRewardedVotesPerAccountPerDay { get; set; } = 2;
+    public int ClaimCooldownSeconds { get; set; } = 10;
+    public bool BroadcastSuccessfulVotes { get; set; } = true;
+    public string BroadcastMessage { get; set; } = "{PLAYER} voted for the server and earned {REWARD}!";
+    public List<VoteProviderConfig> Providers { get; set; } =
+    [
+        new() { Id = "terraria-servers", Type = "TerrariaServers", DisplayName = "Terraria-Servers.com" },
+        new() { Id = "tserverweb", Type = "TServerWeb", DisplayName = "TServerWeb.com" }
+    ];
+}
+
+public sealed class VoteProviderConfig
+{
+    public string Id { get; set; } = "";
+    public string Type { get; set; } = "";
+    public string DisplayName { get; set; } = "";
+    public bool Enabled { get; set; } = false;
+    public string ServerId { get; set; } = "";
+    public string ApiKey { get; set; } = "";
+    public string VotingUrl { get; set; } = "";
+    public int MaximumClaimsPerAccountPerDay { get; set; } = 1;
+    public int TimeoutSeconds { get; set; } = 10;
+    public VoteRewardPackage Rewards { get; set; } = new();
+}
+
+public sealed class VoteRewardPackage
+{
+    public decimal CurrencyAmount { get; set; } = 0m;
+    public List<VoteItemReward> Items { get; set; } = [];
+    public List<VoteGroupReward> Groups { get; set; } = [];
+}
+
+public sealed class VoteItemReward
+{
+    public int ItemId { get; set; }
+    public int Stack { get; set; } = 1;
+    public int Prefix { get; set; }
+}
+
+public sealed class VoteGroupReward
+{
+    public string Group { get; set; } = "";
+    public int DurationMinutes { get; set; } = 1440;
 }
 
 public sealed class BankingConfig
