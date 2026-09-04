@@ -1,3 +1,11 @@
+# 1.4.0-rc.1
+
+- Add native vote rewards for Terraria-Servers.com and TServerWeb.com.
+- Add authenticated `/vote` links, claim, status and TServerWeb CAPTCHA flows.
+- Add configurable treasury-backed currency, item and temporary TShock group rewards.
+- Add persistent duplicate protection, per-provider limits, combined UTC daily caps and claim throttling.
+- Keep provider credentials out of source control and require HTTPS provider communication.
+
 # 1.3.2-rc.1
 
 - Replace long portal login links with account-bound, six-digit one-time codes, expiry and guessing limits.
