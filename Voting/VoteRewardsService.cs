@@ -167,7 +167,7 @@ public sealed class VoteRewardsService : IDisposable
             {
                 if (!TShock.Groups.GroupExists(group.Group))
                     throw new InvalidOperationException($"Configured vote reward group does not exist: {group.Group}");
-                Commands.HandleCommand(TSPlayer.Server,
+                TShockAPI.Commands.HandleCommand(TSPlayer.Server,
                     $"/tempgroup \"{player.Name.Replace("\"", "")}\" \"{group.Group.Replace("\"", "")}\" {group.DurationMinutes}m");
             }
         }
