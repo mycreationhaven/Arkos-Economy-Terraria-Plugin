@@ -17,6 +17,10 @@ not require either provider's legacy TShock DLL.
 Permission: `arkoviaeconomy.vote`. Players must also be logged into a TShock account. The stable
 TShock account ID, rather than an IP address or character name, owns each reward claim.
 
+TServerWeb requires its numeric server ID (for example, `9531`) and does not issue or require an API
+key for this provider entry. Leave TServerWeb's `ApiKey` value blank. The `ApiKey` field is used only
+by the Terraria-Servers.com claim API.
+
 ## Configuration
 
 Copy the `Voting` section from `examples/config.example.json` into the active configuration. Keep

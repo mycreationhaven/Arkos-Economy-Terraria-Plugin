@@ -120,7 +120,7 @@ public sealed class VoteRewardsService : IDisposable
         var url = "https://www.tserverweb.com/vote.php?user=" + Uri.EscapeDataString(player.Account.Name) +
                   "&sid=" + Uri.EscapeDataString(provider.ServerId);
         if (!string.IsNullOrWhiteSpace(answer)) url += "&answer=" + Uri.EscapeDataString(answer);
-        var json = await GetText(url, provider.TimeoutSeconds);
+        var json = await GetText(url, provider.TimeoutSeconds, "TServerWeb Vote Plugin");
         var response = JsonConvert.DeserializeObject<TServerWebResponse>(json)
             ?? throw new InvalidOperationException("TServerWeb returned an invalid response.");
         switch (response.Response)
@@ -193,10 +193,16 @@ public sealed class VoteRewardsService : IDisposable
             throw new InvalidOperationException($"You have already received today's {provider.DisplayName} reward.");
     }
 
-    private async Task<string> GetText(string url, int timeoutSeconds)
+    private async Task<string> GetText(string url, int timeoutSeconds, string? userAgent = null)
     {
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(timeoutSeconds));
-        using var response = await _http.GetAsync(url, cts.Token);
+        using var request = new HttpRequestMessage(HttpMethod.Get, url);
+        if (!string.IsNullOrWhiteSpace(userAgent))
+        {
+            request.Headers.UserAgent.Clear();
+            request.Headers.UserAgent.ParseAdd(userAgent);
+        }
+        using var response = await _http.SendAsync(request, cts.Token);
         response.EnsureSuccessStatusCode();
         var body = await response.Content.ReadAsStringAsync(cts.Token);
         if (body.Length > 4096) throw new InvalidOperationException("Vote provider response was too large.");

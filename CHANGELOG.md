@@ -1,3 +1,8 @@
+# 1.4.0-rc.2
+
+- Send TServerWeb's required `TServerWeb Vote Plugin` client identifier for vote and CAPTCHA requests.
+- Clarify that TServerWeb requires only its numeric server ID; its provider `ApiKey` remains blank.
+
 # 1.4.0-rc.1
 
 - Add native vote rewards for Terraria-Servers.com and TServerWeb.com.

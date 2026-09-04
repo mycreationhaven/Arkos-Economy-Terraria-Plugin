@@ -1,8 +1,8 @@
-# 🌎 Arkovia Economy for Terraria / TShock — v1.4.0-rc.1
+# 🌎 Arkovia Economy for Terraria / TShock — v1.4.0-rc.2
 
 > A treasury-backed Terraria economy with paid ranks, quests, jobs, gameplay rewards, banking, player blockchain wallets, and optional Arkovia blockchain integration.
 
-**Current source and included DLL: `v1.4.0-rc.1` (release candidate).** This version adds configurable voting rewards for Terraria-Servers.com and TServerWeb. [Voting setup](docs/VOTING.md) · [Progression setup](docs/PROGRESSION.md) · [Commands](docs/COMMANDS.md) · [Changelog](CHANGELOG.md) · [Validation](VALIDATION.md).
+**Current source: `v1.4.0-rc.2` (release candidate).** This version corrects TServerWeb client identification and includes configurable voting rewards for Terraria-Servers.com and TServerWeb. The included DLL remains `v1.4.0-rc.1` until the `rc.2` Actions build passes. [Voting setup](docs/VOTING.md) · [Progression setup](docs/PROGRESSION.md) · [Commands](docs/COMMANDS.md) · [Changelog](CHANGELOG.md) · [Validation](VALIDATION.md).
 
 **Arkovia Economy** is an open-source economy plugin for Terraria servers running TShock.
 
@@ -47,6 +47,10 @@ Server operators can use the native **ARKOS** currency or customize the economy 
 | Terraria-Servers.com and TServerWeb vote rewards | ✅ Implemented — provider staging required |
 
 ---
+
+## Fixed in v1.4.0-rc.2
+
+TServerWeb vote and CAPTCHA requests now send the exact game-plugin client identifier required by TServerWeb. TServerWeb needs only the numeric server ID; leave its `ApiKey` value blank.
 
 ## New in v1.4.0-rc.1
 
