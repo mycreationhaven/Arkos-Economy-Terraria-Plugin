@@ -2,7 +2,7 @@
 
 > A treasury-backed Terraria economy with paid ranks, quests, jobs, gameplay rewards, banking, player blockchain wallets, and optional Arkovia blockchain integration.
 
-**Current source: `v1.4.0-rc.2` (release candidate).** This version corrects TServerWeb client identification and includes configurable voting rewards for Terraria-Servers.com and TServerWeb. The included DLL remains `v1.4.0-rc.1` until the `rc.2` Actions build passes. [Voting setup](docs/VOTING.md) · [Progression setup](docs/PROGRESSION.md) · [Commands](docs/COMMANDS.md) · [Changelog](CHANGELOG.md) · [Validation](VALIDATION.md).
+**Current source and included DLL: `v1.4.0-rc.2` (release candidate).** This version corrects TServerWeb client identification and includes configurable voting rewards for Terraria-Servers.com and TServerWeb. [Voting setup](docs/VOTING.md) · [Progression setup](docs/PROGRESSION.md) · [Commands](docs/COMMANDS.md) · [Changelog](CHANGELOG.md) · [Validation](VALIDATION.md).
 
 **Arkovia Economy** is an open-source economy plugin for Terraria servers running TShock.
 
@@ -58,7 +58,7 @@ Players can now use `/vote` to view voting links, claim verified votes, check da
 
 Vote claims require an authenticated TShock account and are stored persistently to prevent duplicate rewards after restarts. Providers remain disabled until the server owner configures them. See the complete [Voting Rewards Setup Guide](docs/VOTING.md).
 
-The compiled `release/ArkoviaEconomy.dll` now matches this `v1.4.0-rc.1` source and targets TShock 6.1.0 on .NET 9.
+The compiled `release/ArkoviaEconomy.dll` targets TShock 6.1.0 on .NET 9. The corrected `v1.4.0-rc.2` DLL is documented in the compiled-release section below.
 
 ## New in v1.3.2-rc.1
 
@@ -700,7 +700,7 @@ The off-chain Terraria economy should be treated separately from blockchain avai
 
 ### Option A — Install the Included DLL
 
-The `v1.4.0-rc.1` repository build includes a compiled plugin at:
+The `v1.4.0-rc.2` repository build includes a compiled plugin at:
 
 ```text
 release/ArkoviaEconomy.dll
@@ -746,10 +746,10 @@ Copy that DLL into the TShock `ServerPlugins` directory and restart TShock.
 
 The `release/` directory contains the precompiled plugin for operators who do not want to build the project themselves.
 
-The included DLL matches the `v1.4.0-rc.1` source, targets TShock 6.1.0 on .NET 9, and includes voting rewards. Its SHA-256 checksum is:
+The included DLL matches the `v1.4.0-rc.2` source, targets TShock 6.1.0 on .NET 9, and includes the TServerWeb compatibility correction. Its SHA-256 checksum is:
 
 ```text
-e7b8e89e56975e9863de38f6e510e65154d6f3dc50624d8d944e8c42f0df5968
+b0558229197864b6852f4855ac7eda119462250c096725e2ad5050f59285f539
 ```
 
 The source code used to build the plugin is included in the repository so operators can inspect and compile it independently.
