@@ -76,6 +76,7 @@ public sealed class VotingConfig
     public int ClaimCooldownSeconds { get; set; } = 10;
     public bool BroadcastSuccessfulVotes { get; set; } = true;
     public string BroadcastMessage { get; set; } = "{PLAYER} voted for the server and earned {REWARD}!";
+    [JsonProperty(ObjectCreationHandling = ObjectCreationHandling.Replace)]
     public List<VoteProviderConfig> Providers { get; set; } =
     [
         new() { Id = "terraria-servers", Type = "TerrariaServers", DisplayName = "Terraria-Servers.com" },
