@@ -26,6 +26,43 @@
     "DailyReward": 0.0,
     "NewPlayerReward": 0.0
   },
+  "Voting": {
+    "Enabled": false,
+    "MaximumRewardedVotesPerAccountPerDay": 2,
+    "ClaimCooldownSeconds": 10,
+    "BroadcastSuccessfulVotes": true,
+    "BroadcastMessage": "{PLAYER} voted for the server and earned {REWARD}!",
+    "Providers": [
+      {
+        "Id": "terraria-servers",
+        "Type": "TerrariaServers",
+        "DisplayName": "Terraria-Servers.com",
+        "Enabled": false,
+        "ServerId": "",
+        "ApiKey": "YOUR_API_KEY",
+        "VotingUrl": "https://terraria-servers.com/",
+        "MaximumClaimsPerAccountPerDay": 1,
+        "TimeoutSeconds": 10,
+        "Rewards": {
+          "CurrencyAmount": 0.1,
+          "Items": [{ "ItemId": 73, "Stack": 5, "Prefix": 0 }],
+          "Groups": [{ "Group": "voter", "DurationMinutes": 1440 }]
+        }
+      },
+      {
+        "Id": "tserverweb",
+        "Type": "TServerWeb",
+        "DisplayName": "TServerWeb.com",
+        "Enabled": false,
+        "ServerId": "YOUR_SERVER_ID",
+        "ApiKey": "",
+        "VotingUrl": "https://www.tserverweb.com/",
+        "MaximumClaimsPerAccountPerDay": 1,
+        "TimeoutSeconds": 10,
+        "Rewards": { "CurrencyAmount": 0.05, "Items": [], "Groups": [] }
+      }
+    ]
+  },
   "GameplayEconomy": {
     "Enabled": true,
     "DefaultBroadcastMode": "Silent",
