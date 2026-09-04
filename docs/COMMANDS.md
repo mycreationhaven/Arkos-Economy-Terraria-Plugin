@@ -6,6 +6,20 @@ This document describes the current player and administrator commands provided b
 
 ---
 
+## Vote Rewards
+
+```text
+/vote links
+/vote claim [provider]
+/vote status
+/vote tserverweb [captcha-answer]
+```
+
+Permission: `arkoviaeconomy.vote`. See [VOTING.md](VOTING.md) for provider configuration, daily caps,
+treasury-backed currency rewards, items and temporary group rewards.
+
+---
+
 ## Gameplay Balances
 
 ```text

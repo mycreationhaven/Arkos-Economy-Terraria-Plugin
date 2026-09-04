@@ -15,6 +15,7 @@ public sealed partial class EconomyDatabase
     public void EnsureSchema()
     {
         EnsureSettlementSchema();
+        EnsureVoteSchema();
         var creator = new SqlTableCreator(_db, _db.GetSqlQueryBuilder());
 
         creator.EnsureTableStructure(new SqlTable("ArkoviaPlayerWallets",
