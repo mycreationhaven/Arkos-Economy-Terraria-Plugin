@@ -105,8 +105,8 @@ app.MapPost("/api/auth/link", async (
 {
     var account = (request.Account ?? string.Empty).Trim();
     var code = (request.Code ?? string.Empty).Trim();
-    if (account.Length is < 1 or > 64 || code.Length != 8 || !code.All(char.IsDigit))
-        return Results.BadRequest(new { error = "Enter your Terraria account name and the 8-digit link code from /market link." });
+    if (account.Length is < 1 or > 64 || code.Length != 6 || !code.All(char.IsDigit))
+        return Results.BadRequest(new { error = "Enter your Terraria account name and the 6-digit link code from /market link." });
 
     var subject = cfg.SubjectForAccount(account);
     var path = $"/marketplace/api/v1/link/{Uri.EscapeDataString(account)}/{Uri.EscapeDataString(code)}/{Uri.EscapeDataString(subject)}";
@@ -387,7 +387,6 @@ sealed class TShockMarketplaceClient
         var body = await response.Content.ReadAsStringAsync(ct);
         if (body.Length > 1_000_000)
             return new ProxyResponse(HttpStatusCode.BadGateway, "{\"error\":\"Upstream response was too large.\"}");
-        if (string.IsNullOrWhiteSpace(body)) body = "{}";
         return new ProxyResponse(response.StatusCode, body);
     }
 }
