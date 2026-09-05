@@ -77,7 +77,7 @@ public sealed class MarketplaceCommands
                     }
                     var challenge = _links.Issue(identity.Id, identity.Name);
                     args.Player.SendSuccessMessage($"Marketplace link code: {challenge.Code}");
-                    args.Player.SendInfoMessage("Enter this code on the Arkovia marketplace while signed in. It expires in 10 minutes and can be used once.");
+                    args.Player.SendInfoMessage("Enter this code on the Arkovia marketplace while signed in. It expires in 5 minutes and can be used once.");
                     break;
                 }
                 case "listings":
