@@ -27,12 +27,62 @@ public sealed class MarketplaceWebMutationService
         _towns = towns;
     }
 
+    public MarketplaceWebMutationResult List(string webSubject, string assetId, long priceAtomic, string operationKey)
+    {
+        lock (_gate)
+        {
+            var link = RequireLink(webSubject);
+            if (priceAtomic <= 0)
+                throw new InvalidOperationException("Listing price must be positive.");
+
+            assetId = assetId.Trim();
+            if (assetId.Length is < 10 or > 64 || !assetId.StartsWith("ARK-ASSET-", StringComparison.Ordinal))
+                throw new InvalidOperationException("Invalid asset ID.");
+
+            // Bind both asset and chosen price into the durable operation target so the same
+            // idempotency key cannot later be replayed with a different price.
+            var target = assetId + "@" + priceAtomic;
+            if (target.Length > 64)
+                throw new InvalidOperationException("Marketplace listing request is too large.");
+
+            var operation = PrepareOperation(operationKey, link, "list", target, false);
+            if (string.Equals(operation.Status, "completed", StringComparison.OrdinalIgnoreCase))
+                return ToResult(operation, operation.ResultId);
+
+            if (!string.IsNullOrWhiteSpace(operation.ResultId))
+            {
+                var existing = _db.GetMarketplaceListing(operation.ResultId);
+                if (existing is not null && existing.SellerOwnerId == link.TShockUserId.ToString())
+                {
+                    operation = CompleteOperation(operation, existing.ListingId);
+                    return ToResult(operation, existing.ListingId);
+                }
+            }
+
+            try
+            {
+                var listing = _marketplace.ListPlayerAsset(
+                    link.TShockUserId,
+                    link.TShockAccountName,
+                    assetId,
+                    priceAtomic);
+                operation = CompleteOperation(operation, listing.ListingId);
+                return ToResult(operation, listing.ListingId);
+            }
+            catch
+            {
+                MarkFailed(operation);
+                throw;
+            }
+        }
+    }
+
     public MarketplaceWebMutationResult Buy(string webSubject, string listingId, string operationKey)
     {
         lock (_gate)
         {
             var link = RequireLink(webSubject);
-            var operation = PrepareOperation(operationKey, link, "buy", listingId);
+            var operation = PrepareOperation(operationKey, link, "buy", listingId, true);
             if (string.Equals(operation.Status, "completed", StringComparison.OrdinalIgnoreCase))
                 return ToResult(operation);
 
@@ -68,7 +118,7 @@ public sealed class MarketplaceWebMutationService
         lock (_gate)
         {
             var link = RequireLink(webSubject);
-            var operation = PrepareOperation(operationKey, link, "cancel", listingId);
+            var operation = PrepareOperation(operationKey, link, "cancel", listingId, true);
             if (string.Equals(operation.Status, "completed", StringComparison.OrdinalIgnoreCase))
                 return ToResult(operation);
 
@@ -107,29 +157,32 @@ public sealed class MarketplaceWebMutationService
         string operationKey,
         WebAccountLink link,
         string kind,
-        string listingId)
+        string targetId,
+        bool requireListingId)
     {
         operationKey = operationKey.Trim();
-        listingId = listingId.Trim();
+        targetId = targetId.Trim();
         if (operationKey.Length is < 12 or > 96 ||
             !operationKey.All(c => char.IsLetterOrDigit(c) || c is '-' or '_' or '.' or ':'))
             throw new InvalidOperationException("Invalid idempotency key.");
-        if (listingId.Length is < 10 or > 64 || !listingId.StartsWith("ARK-LIST-", StringComparison.Ordinal))
+        if (targetId.Length is < 10 or > 64)
+            throw new InvalidOperationException("Invalid marketplace operation target.");
+        if (requireListingId && !targetId.StartsWith("ARK-LIST-", StringComparison.Ordinal))
             throw new InvalidOperationException("Invalid listing ID.");
 
         var operation = _db.GetMarketplaceWebOperation(operationKey);
         if (operation is null)
             return _db.CreateMarketplaceWebOperation(
-                operationKey, link.WebSubject, link.TShockUserId, kind, listingId);
+                operationKey, link.WebSubject, link.TShockUserId, kind, targetId);
 
         if (!string.Equals(operation.WebSubject, link.WebSubject, StringComparison.Ordinal) ||
             operation.TShockUserId != link.TShockUserId ||
             !string.Equals(operation.Kind, kind, StringComparison.Ordinal) ||
-            !string.Equals(operation.ListingId, listingId, StringComparison.Ordinal))
+            !string.Equals(operation.ListingId, targetId, StringComparison.Ordinal))
             throw new InvalidOperationException("That idempotency key is already bound to a different marketplace request.");
 
         if (string.Equals(operation.Status, "failed", StringComparison.OrdinalIgnoreCase))
-            return _db.UpdateMarketplaceWebOperation(operation.OperationKey, "failed", "pending");
+            return _db.UpdateMarketplaceWebOperation(operation.OperationKey, "failed", "pending", operation.ResultId);
 
         return operation;
     }
@@ -146,7 +199,7 @@ public sealed class MarketplaceWebMutationService
         try
         {
             if (string.Equals(operation.Status, "pending", StringComparison.OrdinalIgnoreCase))
-                _db.UpdateMarketplaceWebOperation(operation.OperationKey, "pending", "failed");
+                _db.UpdateMarketplaceWebOperation(operation.OperationKey, "pending", "failed", operation.ResultId);
         }
         catch
         {
@@ -160,10 +213,10 @@ public sealed class MarketplaceWebMutationService
         return new InvalidOperationException(message);
     }
 
-    private static MarketplaceWebMutationResult ToResult(MarketplaceWebOperation operation) => new(
+    private static MarketplaceWebMutationResult ToResult(MarketplaceWebOperation operation, string? listingIdOverride = null) => new(
         operation.OperationKey,
         operation.Kind,
-        operation.ListingId,
+        listingIdOverride ?? operation.ListingId,
         operation.Status,
         operation.ResultId);
 }
