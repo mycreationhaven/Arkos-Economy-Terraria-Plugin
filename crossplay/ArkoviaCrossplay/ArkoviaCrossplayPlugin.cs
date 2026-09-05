@@ -23,8 +23,6 @@ public sealed class ArkoviaCrossplayPlugin : TerrariaPlugin
 
     public ArkoviaCrossplayPlugin(Main game) : base(game)
     {
-        // Run before normal version validation so we can safely rewrite the
-        // approved ConnectRequest handshake in-place.
         Order = -1000;
     }
 
@@ -105,16 +103,11 @@ public sealed class ArkoviaCrossplayPlugin : TerrariaPlugin
 
         if (!_config.AllowedClientProtocols.TryGetValue(clientProtocol, out var description))
         {
-            // Do not override TShock's normal behavior for unknown versions.
-            // This keeps the compatibility boundary explicit and fail-closed.
             if (_config.Verbose)
                 TShock.Log.ConsoleWarn($"[ArkoviaCrossplay] Slot {index} protocol '{clientProtocol}' is not approved; leaving normal server validation in place.");
             return;
         }
 
-        // Terraria 1.4.5.x protocol strings are the same encoded length
-        // ("Terraria" + a three-digit protocol number). Refuse any unexpected
-        // length mismatch rather than resizing TShock's network buffer.
         var replacement = BuildConnectRequest(ServerProtocol);
         var originalPacketLength = args.Length + 3;
         if (replacement.Length != originalPacketLength)
@@ -192,7 +185,8 @@ public sealed class ArkoviaCrossplayPlugin : TerrariaPlugin
         {
             var json = File.ReadAllText(ConfigPath);
             _config = JsonSerializer.Deserialize<CrossplayConfig>(json, JsonOptions()) ?? CrossplayConfig.CreateDefault();
-            _config.AllowedClientProtocols ??= new Dictionary<string, string>(StringComparer.Ordinal);
+            if (_config.AllowedClientProtocols.Count == 0)
+                TShock.Log.ConsoleWarn("[ArkoviaCrossplay] No older client protocols are approved in configuration.");
         }
         catch (Exception ex)
         {
@@ -218,15 +212,12 @@ public sealed class CrossplayConfig
 {
     public bool Enabled { get; set; } = true;
     public bool Verbose { get; set; } = false;
-    public Dictionary<string, string>? AllowedClientProtocols { get; set; }
+    public Dictionary<string, string> AllowedClientProtocols { get; set; } = new(StringComparer.Ordinal);
 
     public static CrossplayConfig CreateDefault() => new()
     {
         Enabled = true,
         Verbose = false,
-        // Keep this deliberately narrow. These are known Terraria 1.4.5.x
-        // handshake protocols. New versions should be tested before being
-        // added rather than accepting an arbitrary version range.
         AllowedClientProtocols = new Dictionary<string, string>(StringComparer.Ordinal)
         {
             ["Terraria311"] = "Terraria 1.4.5.0 (PC/mobile)",
