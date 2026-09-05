@@ -12,6 +12,14 @@ public static class Permissions
     public const string Vote = "arkoviaeconomy.vote";
     public const string AdminVote = "arkoviaeconomy.admin.vote";
 
+    public const string Town = "arkoviaeconomy.town";
+    public const string TownCreate = "arkoviaeconomy.town.create";
+    public const string TownManage = "arkoviaeconomy.town.manage";
+    public const string TownClaim = "arkoviaeconomy.town.claim";
+    public const string TownBank = "arkoviaeconomy.town.bank";
+    public const string Property = "arkoviaeconomy.property";
+    public const string AdminTown = "arkoviaeconomy.admin.town";
+
     public const string Security = "arkoviaeconomy.security";
     public const string BlockchainDeposit = "arkoviaeconomy.blockchain.deposit";
     public const string BlockchainWithdraw = "arkoviaeconomy.blockchain.withdraw";
