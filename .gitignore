@@ -53,4 +53,5 @@ ServerPlugins/*
 *.pre-arkos-name-fix
 
 signer-dist/
+marketplace-dist/
 __pycache__/
