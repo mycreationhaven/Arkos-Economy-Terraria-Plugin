@@ -10,13 +10,20 @@ namespace ArkoviaEconomy.Commands;
 public sealed class MarketplaceCommands
 {
     private readonly MarketplaceService _market;
+    private readonly MarketplaceAccountLinkService _links;
     private readonly TownService _towns;
     private readonly EconomyDatabase _db;
     private readonly ConfigManager _config;
 
-    public MarketplaceCommands(MarketplaceService market, TownService towns, EconomyDatabase db, ConfigManager config)
+    public MarketplaceCommands(
+        MarketplaceService market,
+        MarketplaceAccountLinkService links,
+        TownService towns,
+        EconomyDatabase db,
+        ConfigManager config)
     {
         _market = market;
+        _links = links;
         _towns = towns;
         _db = db;
         _config = config;
@@ -27,7 +34,7 @@ public sealed class MarketplaceCommands
         yield return new Command(Permissions.Market, Market, "market")
         {
             AllowServer = false,
-            HelpText = "/market listings|info|sellproperty|buy|cancel"
+            HelpText = "/market listings|info|sellproperty|buy|cancel|link"
         };
     }
 
@@ -59,6 +66,20 @@ public sealed class MarketplaceCommands
 
             switch (args.Parameters[0].ToLowerInvariant())
             {
+                case "link":
+                case "weblink":
+                {
+                    var existing = _db.GetWebAccountLinkByUser(identity.Id);
+                    if (existing is not null)
+                    {
+                        args.Player.SendInfoMessage("Your Terraria account is already linked to the marketplace website.");
+                        break;
+                    }
+                    var challenge = _links.Issue(identity.Id, identity.Name);
+                    args.Player.SendSuccessMessage($"Marketplace link code: {challenge.Code}");
+                    args.Player.SendInfoMessage("Enter this code on the Arkovia marketplace while signed in. It expires in 10 minutes and can be used once.");
+                    break;
+                }
                 case "listings":
                 case "list":
                 {
@@ -138,7 +159,7 @@ public sealed class MarketplaceCommands
 
     private static void Help(CommandArgs args)
     {
-        args.Player.SendInfoMessage("/market listings | /market info <listing ID> | /market buy <listing ID>");
+        args.Player.SendInfoMessage("/market listings | /market info <listing ID> | /market buy <listing ID> | /market link");
         args.Player.SendInfoMessage("/market sellproperty <region> <price> | /market cancel <listing ID>");
     }
 }

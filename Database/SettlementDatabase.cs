@@ -21,6 +21,7 @@ public sealed partial class EconomyDatabase
         EnsureAssetSchema();
         EnsureTownSchema();
         EnsureMarketplaceSchema();
+        EnsureWebAccountLinkSchema();
     }
 
     public EconomyOperation? GetOperation(string id)

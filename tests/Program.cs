@@ -167,6 +167,7 @@ checks += TownTests.Run();
 checks += TownGovernanceTests.Run();
 checks += MarketplaceTests.Run();
 checks += MarketplaceReadApiTests.Run();
+checks += MarketplaceAccountLinkTests.Run();
 connection.Close();
 SqliteConnection.ClearAllPools();
 File.Delete(databasePath);

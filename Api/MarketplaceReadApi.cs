@@ -1,4 +1,5 @@
 using ArkoviaEconomy.Config;
+using ArkoviaEconomy.Core;
 using ArkoviaEconomy.Database;
 using ArkoviaEconomy.Models;
 using Rests;
@@ -7,10 +8,13 @@ using TShockAPI;
 namespace ArkoviaEconomy.Api;
 
 /// <summary>
-/// Read-only marketplace API intended for a trusted web backend. The browser should never
+/// Marketplace API intended for a trusted web backend. The browser should never
 /// receive a TShock REST token or connect directly to the economy database.
 /// </summary>
-public sealed class MarketplaceReadApi(EconomyDatabase db, Func<EconomyConfig> config) : IDisposable
+public sealed class MarketplaceReadApi(
+    EconomyDatabase db,
+    Func<EconomyConfig> config,
+    MarketplaceAccountLinkService links) : IDisposable
 {
     private volatile bool _active = true;
     private bool _registered;
@@ -36,9 +40,19 @@ public sealed class MarketplaceReadApi(EconomyDatabase db, Func<EconomyConfig> c
             Listing,
             Permissions.MarketplaceApiRead));
 
+        var linkCommand = new SecureRestCommand(
+            "Arkovia marketplace account link",
+            "/marketplace/api/v1/link/{account}/{code}/{subject}",
+            LinkAccount,
+            Permissions.MarketplaceApiLink)
+        {
+            DoLog = false
+        };
+        TShock.RestApi.Register(linkCommand);
+
         _registered = true;
         if (!TShock.Config.Settings.RestApiEnabled)
-            ArkoviaEconomy.Core.EconomyLog.Warn("[ArkoviaEconomy] Marketplace read API routes registered, but TShock RestApiEnabled is false.");
+            EconomyLog.Warn("[ArkoviaEconomy] Marketplace API routes registered, but TShock RestApiEnabled is false.");
     }
 
     private object Status(RestRequestArgs args)
@@ -79,6 +93,28 @@ public sealed class MarketplaceReadApi(EconomyDatabase db, Func<EconomyConfig> c
         var result = new RestObject();
         result["listing"] = view;
         return result;
+    }
+
+    private object LinkAccount(RestRequestArgs args)
+    {
+        if (!_active) return Disabled();
+        try
+        {
+            var account = args.Parameters["account"] ?? string.Empty;
+            var code = args.Parameters["code"] ?? string.Empty;
+            var subject = args.Parameters["subject"] ?? string.Empty;
+            var link = links.Redeem(account, code, subject);
+            var result = new RestObject();
+            result["linkId"] = link.LinkId;
+            result["tshockUserId"] = link.TShockUserId;
+            result["accountName"] = link.TShockAccountName;
+            result["linkedUtc"] = link.LinkedUtc;
+            return result;
+        }
+        catch (InvalidOperationException ex)
+        {
+            return new RestObject("400") { Error = ex.Message };
+        }
     }
 
     private static int ParseLimit(string? value)
