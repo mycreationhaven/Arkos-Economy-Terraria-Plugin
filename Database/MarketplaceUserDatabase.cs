@@ -5,6 +5,30 @@ namespace ArkoviaEconomy.Database;
 
 public sealed partial class EconomyDatabase
 {
+    public IReadOnlyList<ArkoviaAsset> GetAssetsForOwner(
+        string ownerType,
+        string ownerId,
+        string? status = null,
+        int limit = 50)
+    {
+        ownerType = ownerType.Trim().ToLowerInvariant();
+        ownerId = ownerId.Trim();
+        if (ownerType.Length == 0 || ownerId.Length == 0)
+            return [];
+
+        limit = Math.Clamp(limit, 1, 100);
+        var result = new List<ArkoviaAsset>();
+        using var r = string.IsNullOrWhiteSpace(status)
+            ? _db.QueryReader(
+                $"SELECT * FROM ArkoviaAssets WHERE OwnerType=@0 AND OwnerId=@1 ORDER BY UpdatedUtc DESC LIMIT {limit}",
+                ownerType, ownerId)
+            : _db.QueryReader(
+                $"SELECT * FROM ArkoviaAssets WHERE OwnerType=@0 AND OwnerId=@1 AND Status=@2 ORDER BY UpdatedUtc DESC LIMIT {limit}",
+                ownerType, ownerId, status.Trim().ToLowerInvariant());
+        while (r.Read()) result.Add(ReadAsset(r));
+        return result;
+    }
+
     public IReadOnlyList<MarketplaceListing> GetMarketplaceListingsForOwner(
         string ownerType,
         string ownerId,
