@@ -39,26 +39,57 @@ public sealed partial class EconomyService
     public LedgerTransaction Transfer(EconomyAccount from, EconomyAccount to, long amountAtomic, string type, string refType, string refId, string description, string actor, long feeAtomic = 0)
     {
         if (amountAtomic <= 0) throw new InvalidOperationException("Amount must be positive.");
+        if (feeAtomic < 0) throw new InvalidOperationException("Fee cannot be negative.");
         lock (_gate)
         {
-            from = _db.GetAccountById(from.Id)!;
-            to = _db.GetAccountById(to.Id)!;
+            from = _db.GetAccountById(from.Id) ?? throw new InvalidOperationException("Sender account was not found.");
+            to = _db.GetAccountById(to.Id) ?? throw new InvalidOperationException("Recipient account was not found.");
             if (from.Frozen || to.Frozen) throw new InvalidOperationException("One of the accounts is frozen.");
+            if (from.Id == to.Id) throw new InvalidOperationException("Sender and recipient must be different accounts.");
+
             var total = checked(amountAtomic + feeAtomic);
             if (from.WalletAtomic < total) throw new InvalidOperationException("Insufficient wallet balance.");
-            if (to.AccountType == "player" && checked(to.WalletAtomic + amountAtomic) > _config().ToAtomic(_config().MaximumPlayerBalance)) throw new InvalidOperationException("Recipient balance limit would be exceeded.");
+            if (to.AccountType == "player" && checked(to.WalletAtomic + amountAtomic) > _config().ToAtomic(_config().MaximumPlayerBalance))
+                throw new InvalidOperationException("Recipient balance limit would be exceeded.");
 
-            _db.SetBalances(from.Id, from.WalletAtomic - total, from.BankAtomic);
-            _db.SetBalances(to.Id, checked(to.WalletAtomic + amountAtomic), to.BankAtomic);
-            var external = Guid.NewGuid().ToString("N");
-            _db.InsertTransaction(external, from.Id, to.Id, amountAtomic, type, refType, refId, description, actor);
+            var changes = new List<EconomyDatabase.AccountBalanceChange>
+            {
+                new(from.Id, from.WalletAtomic, from.WalletAtomic - total, from.BankAtomic, from.BankAtomic),
+                new(to.Id, to.WalletAtomic, checked(to.WalletAtomic + amountAtomic), to.BankAtomic, to.BankAtomic)
+            };
+
+            var mainExternal = Guid.NewGuid().ToString("N");
+            var writes = new List<EconomyDatabase.LedgerWrite>
+            {
+                new(mainExternal, from.Id, to.Id, amountAtomic, type, refType, refId, description, actor)
+            };
+
             if (feeAtomic > 0 && _config().ReturnServerFeesToTreasury)
             {
                 var treasury = GetTreasury();
-                treasury = _db.GetAccountById(treasury.Id)!;
-                _db.SetBalances(treasury.Id, checked(treasury.WalletAtomic + feeAtomic), treasury.BankAtomic);
-                _db.InsertTransaction(Guid.NewGuid().ToString("N"), from.Id, treasury.Id, feeAtomic, "fee", refType, refId, $"Fee: {description}", actor);
+                treasury = _db.GetAccountById(treasury.Id) ?? throw new InvalidOperationException("Treasury account was not found.");
+                if (treasury.Id == from.Id || treasury.Id == to.Id)
+                    throw new InvalidOperationException("Fee settlement cannot reuse the sender or recipient account.");
+
+                changes.Add(new EconomyDatabase.AccountBalanceChange(
+                    treasury.Id,
+                    treasury.WalletAtomic,
+                    checked(treasury.WalletAtomic + feeAtomic),
+                    treasury.BankAtomic,
+                    treasury.BankAtomic));
+                writes.Add(new EconomyDatabase.LedgerWrite(
+                    Guid.NewGuid().ToString("N"),
+                    from.Id,
+                    treasury.Id,
+                    feeAtomic,
+                    "fee",
+                    refType,
+                    refId,
+                    $"Fee: {description}",
+                    actor));
             }
+
+            _db.CommitAccountSettlement(changes, writes);
             return _db.GetTransactions(to.Id, 1)[0];
         }
     }
@@ -66,13 +97,35 @@ public sealed partial class EconomyService
     public void CreditTreasury(long atomic, string externalId, string refId, string description)
     {
         if (atomic <= 0) return;
+        if (string.IsNullOrWhiteSpace(externalId)) throw new InvalidOperationException("External transaction ID is required.");
         lock (_gate)
         {
             if (_db.TransactionExists(externalId)) return;
             var t = GetTreasury();
-            t = _db.GetAccountById(t.Id)!;
-            _db.SetBalances(t.Id, checked(t.WalletAtomic + atomic), t.BankAtomic);
-            _db.InsertTransaction(externalId, null, t.Id, atomic, "blockchain_funding", "arkovia_ledger", refId, description, "ArkoviaNetwork");
+            t = _db.GetAccountById(t.Id) ?? throw new InvalidOperationException("Treasury account was not found.");
+            _db.CommitAccountSettlement(
+                new[]
+                {
+                    new EconomyDatabase.AccountBalanceChange(
+                        t.Id,
+                        t.WalletAtomic,
+                        checked(t.WalletAtomic + atomic),
+                        t.BankAtomic,
+                        t.BankAtomic)
+                },
+                new[]
+                {
+                    new EconomyDatabase.LedgerWrite(
+                        externalId,
+                        null,
+                        t.Id,
+                        atomic,
+                        "blockchain_funding",
+                        "arkovia_ledger",
+                        refId,
+                        description,
+                        "ArkoviaNetwork")
+                });
         }
     }
 
@@ -95,13 +148,59 @@ public sealed partial class EconomyService
         if (atomic <= 0) throw new InvalidOperationException("Amount must be positive.");
         lock (_gate)
         {
-            account = _db.GetAccountById(account.Id)!;
+            account = _db.GetAccountById(account.Id) ?? throw new InvalidOperationException("Account was not found.");
             if (account.Frozen) throw new InvalidOperationException("Account is frozen.");
             var fee = Percent(atomic, _config().Banking.DepositFeePercent);
-            if (account.WalletAtomic < atomic + fee) throw new InvalidOperationException("Insufficient wallet balance.");
-            _db.SetBalances(account.Id, account.WalletAtomic - atomic - fee, checked(account.BankAtomic + atomic));
-            _db.InsertTransaction(Guid.NewGuid().ToString("N"), account.Id, account.Id, atomic, "bank_deposit", "bank", "deposit", "Wallet to bank", actor);
-            CreditFee(account, fee, "deposit fee", actor);
+            var totalDebit = checked(atomic + fee);
+            if (account.WalletAtomic < totalDebit) throw new InvalidOperationException("Insufficient wallet balance.");
+
+            var changes = new List<EconomyDatabase.AccountBalanceChange>
+            {
+                new(
+                    account.Id,
+                    account.WalletAtomic,
+                    account.WalletAtomic - totalDebit,
+                    account.BankAtomic,
+                    checked(account.BankAtomic + atomic))
+            };
+            var writes = new List<EconomyDatabase.LedgerWrite>
+            {
+                new(
+                    Guid.NewGuid().ToString("N"),
+                    account.Id,
+                    account.Id,
+                    atomic,
+                    "bank_deposit",
+                    "bank",
+                    "deposit",
+                    "Wallet to bank",
+                    actor)
+            };
+
+            if (fee > 0 && _config().ReturnServerFeesToTreasury)
+            {
+                var treasury = GetTreasury();
+                treasury = _db.GetAccountById(treasury.Id) ?? throw new InvalidOperationException("Treasury account was not found.");
+                if (treasury.Id == account.Id) throw new InvalidOperationException("Player account cannot be the treasury account.");
+                changes.Add(new EconomyDatabase.AccountBalanceChange(
+                    treasury.Id,
+                    treasury.WalletAtomic,
+                    checked(treasury.WalletAtomic + fee),
+                    treasury.BankAtomic,
+                    treasury.BankAtomic));
+                writes.Add(new EconomyDatabase.LedgerWrite(
+                    Guid.NewGuid().ToString("N"),
+                    account.Id,
+                    treasury.Id,
+                    fee,
+                    "fee",
+                    "bank",
+                    "fee",
+                    "deposit fee",
+                    actor));
+            }
+
+            _db.CommitAccountSettlement(changes, writes);
         }
     }
 
@@ -110,12 +209,61 @@ public sealed partial class EconomyService
         if (atomic <= 0) throw new InvalidOperationException("Amount must be positive.");
         lock (_gate)
         {
-            account = _db.GetAccountById(account.Id)!;
+            account = _db.GetAccountById(account.Id) ?? throw new InvalidOperationException("Account was not found.");
+            if (account.Frozen) throw new InvalidOperationException("Account is frozen.");
             var fee = Percent(atomic, _config().Banking.WithdrawalFeePercent);
-            if (account.BankAtomic < atomic + fee) throw new InvalidOperationException("Insufficient bank balance.");
-            _db.SetBalances(account.Id, checked(account.WalletAtomic + atomic), account.BankAtomic - atomic - fee);
-            _db.InsertTransaction(Guid.NewGuid().ToString("N"), account.Id, account.Id, atomic, "bank_withdrawal", "bank", "withdraw", "Bank to wallet", actor);
-            CreditFee(account, fee, "withdrawal fee", actor);
+            var totalDebit = checked(atomic + fee);
+            if (account.BankAtomic < totalDebit) throw new InvalidOperationException("Insufficient bank balance.");
+            if (account.AccountType == "player" && checked(account.WalletAtomic + atomic) > _config().ToAtomic(_config().MaximumPlayerBalance))
+                throw new InvalidOperationException("Withdrawal would exceed the player's maximum wallet balance.");
+
+            var changes = new List<EconomyDatabase.AccountBalanceChange>
+            {
+                new(
+                    account.Id,
+                    account.WalletAtomic,
+                    checked(account.WalletAtomic + atomic),
+                    account.BankAtomic,
+                    account.BankAtomic - totalDebit)
+            };
+            var writes = new List<EconomyDatabase.LedgerWrite>
+            {
+                new(
+                    Guid.NewGuid().ToString("N"),
+                    account.Id,
+                    account.Id,
+                    atomic,
+                    "bank_withdrawal",
+                    "bank",
+                    "withdraw",
+                    "Bank to wallet",
+                    actor)
+            };
+
+            if (fee > 0 && _config().ReturnServerFeesToTreasury)
+            {
+                var treasury = GetTreasury();
+                treasury = _db.GetAccountById(treasury.Id) ?? throw new InvalidOperationException("Treasury account was not found.");
+                if (treasury.Id == account.Id) throw new InvalidOperationException("Player account cannot be the treasury account.");
+                changes.Add(new EconomyDatabase.AccountBalanceChange(
+                    treasury.Id,
+                    treasury.WalletAtomic,
+                    checked(treasury.WalletAtomic + fee),
+                    treasury.BankAtomic,
+                    treasury.BankAtomic));
+                writes.Add(new EconomyDatabase.LedgerWrite(
+                    Guid.NewGuid().ToString("N"),
+                    account.Id,
+                    treasury.Id,
+                    fee,
+                    "fee",
+                    "bank",
+                    "fee",
+                    "withdrawal fee",
+                    actor));
+            }
+
+            _db.CommitAccountSettlement(changes, writes);
         }
     }
 
@@ -161,26 +309,35 @@ public sealed partial class EconomyService
                     "Gameplay reward would exceed the player's " +
                     "maximum wallet balance.");
 
-            _db.SetBalances(
-                treasury.Id,
-                treasury.WalletAtomic - amountAtomic,
-                treasury.BankAtomic);
-
-            _db.SetBalances(
-                player.Id,
-                checked(player.WalletAtomic + amountAtomic),
-                player.BankAtomic);
-
-            _db.InsertTransaction(
-                Guid.NewGuid().ToString("N"),
-                treasury.Id,
-                player.Id,
-                amountAtomic,
-                "gameplay_reward",
-                eventType,
-                referenceId,
-                description,
-                actor);
+            _db.CommitAccountSettlement(
+                new[]
+                {
+                    new EconomyDatabase.AccountBalanceChange(
+                        treasury.Id,
+                        treasury.WalletAtomic,
+                        treasury.WalletAtomic - amountAtomic,
+                        treasury.BankAtomic,
+                        treasury.BankAtomic),
+                    new EconomyDatabase.AccountBalanceChange(
+                        player.Id,
+                        player.WalletAtomic,
+                        checked(player.WalletAtomic + amountAtomic),
+                        player.BankAtomic,
+                        player.BankAtomic)
+                },
+                new[]
+                {
+                    new EconomyDatabase.LedgerWrite(
+                        Guid.NewGuid().ToString("N"),
+                        treasury.Id,
+                        player.Id,
+                        amountAtomic,
+                        "gameplay_reward",
+                        eventType,
+                        referenceId,
+                        description,
+                        actor)
+                });
 
             return amountAtomic;
         }
@@ -346,19 +503,26 @@ public sealed partial class EconomyService
                 ?? throw new InvalidOperationException(
                     "Treasury account was not found.");
 
-            _db.SetBalances(
-                defeated.Id,
-                defeated.WalletAtomic - actualLoss,
-                defeated.BankAtomic);
+            var changes = new List<EconomyDatabase.AccountBalanceChange>
+            {
+                new(
+                    defeated.Id,
+                    defeated.WalletAtomic,
+                    defeated.WalletAtomic - actualLoss,
+                    defeated.BankAtomic,
+                    defeated.BankAtomic)
+            };
+            var writes = new List<EconomyDatabase.LedgerWrite>();
 
             if (winnerAmount > 0)
             {
-                _db.SetBalances(
+                changes.Add(new EconomyDatabase.AccountBalanceChange(
                     winner.Id,
+                    winner.WalletAtomic,
                     checked(winner.WalletAtomic + winnerAmount),
-                    winner.BankAtomic);
-
-                _db.InsertTransaction(
+                    winner.BankAtomic,
+                    winner.BankAtomic));
+                writes.Add(new EconomyDatabase.LedgerWrite(
                     Guid.NewGuid().ToString("N"),
                     defeated.Id,
                     winner.Id,
@@ -367,19 +531,18 @@ public sealed partial class EconomyService
                     "pvp",
                     referenceId,
                     description,
-                    actor);
+                    actor));
             }
 
             if (treasuryAmount > 0)
             {
-                _db.SetBalances(
+                changes.Add(new EconomyDatabase.AccountBalanceChange(
                     treasury.Id,
-                    checked(
-                        treasury.WalletAtomic +
-                        treasuryAmount),
-                    treasury.BankAtomic);
-
-                _db.InsertTransaction(
+                    treasury.WalletAtomic,
+                    checked(treasury.WalletAtomic + treasuryAmount),
+                    treasury.BankAtomic,
+                    treasury.BankAtomic));
+                writes.Add(new EconomyDatabase.LedgerWrite(
                     Guid.NewGuid().ToString("N"),
                     defeated.Id,
                     treasury.Id,
@@ -388,8 +551,10 @@ public sealed partial class EconomyService
                     "pvp",
                     referenceId,
                     description,
-                    actor);
+                    actor));
             }
+
+            _db.CommitAccountSettlement(changes, writes);
 
             return new GameplayPvpResult(
                 actualLoss,

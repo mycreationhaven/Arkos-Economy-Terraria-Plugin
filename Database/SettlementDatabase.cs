@@ -18,6 +18,7 @@ public sealed partial class EconomyDatabase
             new SqlColumn("UserId", MySqlDbType.Int32),
             new SqlColumn("Status", MySqlDbType.VarChar, 32),
             new SqlColumn("Payload", MySqlDbType.Text)));
+        EnsureAssetSchema();
     }
 
     public EconomyOperation? GetOperation(string id)

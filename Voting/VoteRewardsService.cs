@@ -27,14 +27,17 @@ public sealed class VoteRewardsService : IDisposable
 
     public IEnumerable<Command> BuildCommands()
     {
-        yield return new Command(Permissions.Vote, Vote, "vote")
+        // TShock already uses /vote for its built-in vote/poll system. Registering another
+        // /vote command makes dispatch order-dependent and can produce messages such as
+        // "No active vote" instead of reaching Arkovia vote rewards.
+        yield return new Command(Permissions.Vote, Vote, "arkvote", "voterewards")
         {
             AllowServer = false,
-            HelpText = "/vote links|claim [provider]|status or /vote tserverweb [captcha-answer]"
+            HelpText = "/arkvote links|claim [provider]|status|debug or /arkvote tserverweb [captcha-answer]"
         };
     }
 
-    private async void Vote(CommandArgs args)
+    private void Vote(CommandArgs args)
     {
         try
         {
@@ -46,18 +49,37 @@ public sealed class VoteRewardsService : IDisposable
             var action = args.Parameters.FirstOrDefault()?.ToLowerInvariant() ?? "links";
             if (action is "links" or "help") { ShowLinks(args.Player, cfg); return; }
             if (action == "status") { ShowStatus(args.Player, cfg); return; }
+            if (action == "debug") { ShowDebug(args.Player, cfg); return; }
+
+            // Network-backed actions run asynchronously, but all exceptions are observed
+            // and reported by ProcessAsync instead of escaping an async-void callback.
+            _ = ProcessAsync(args, cfg, action);
+        }
+        catch (Exception ex)
+        {
+            ReportError(args.Player, ex);
+        }
+    }
+
+    private async Task ProcessAsync(CommandArgs args, VotingConfig cfg, string action)
+    {
+        try
+        {
             if (action == "tserverweb")
             {
-                var provider = cfg.Providers.FirstOrDefault(p => p.Enabled && p.Type == "TServerWeb")
+                var provider = cfg.Providers.FirstOrDefault(p => p.Enabled && p.Type.Equals("TServerWeb", StringComparison.OrdinalIgnoreCase))
                     ?? throw new InvalidOperationException("TServerWeb voting is not configured.");
                 EnsureCaps(args.Player, provider);
                 await ProcessTServerWeb(args.Player, provider, args.Parameters.Skip(1).FirstOrDefault());
                 return;
             }
-            if (action != "claim") throw new InvalidOperationException("Use /vote links, /vote claim [provider], /vote status, or /vote tserverweb.");
+
+            if (action != "claim")
+                throw new InvalidOperationException("Use /arkvote links, /arkvote claim [provider], /arkvote status, /arkvote debug, or /arkvote tserverweb.");
+
             EnforceCooldown(args.Player.Account.ID, cfg);
             var requested = args.Parameters.Skip(1).FirstOrDefault()?.ToLowerInvariant();
-            var providers = cfg.Providers.Where(p => p.Enabled && p.Type == "TerrariaServers" &&
+            var providers = cfg.Providers.Where(p => p.Enabled && p.Type.Equals("TerrariaServers", StringComparison.OrdinalIgnoreCase) &&
                 (requested is null || p.Id.Equals(requested, StringComparison.OrdinalIgnoreCase))).ToList();
             if (providers.Count == 0) throw new InvalidOperationException("No matching claim-based voting provider is enabled.");
             foreach (var provider in providers)
@@ -68,17 +90,28 @@ public sealed class VoteRewardsService : IDisposable
         }
         catch (Exception ex)
         {
-            args.Player.SendErrorMessage("[Vote Rewards] " + ex.Message);
-            EconomyLog.Warn($"[VoteRewards] {ex.GetType().Name}: {ex.Message}");
+            ReportError(args.Player, ex);
         }
+    }
+
+    private static void ReportError(TSPlayer player, Exception ex)
+    {
+        player.SendErrorMessage("[Vote Rewards] " + ex.Message);
+        EconomyLog.Warn($"[VoteRewards] {ex.GetType().Name}: {ex.Message}");
     }
 
     private void ShowLinks(TSPlayer player, VotingConfig cfg)
     {
         player.SendInfoMessage("Vote for this server and earn configured rewards:");
-        foreach (var provider in cfg.Providers.Where(p => p.Enabled))
+        var enabled = cfg.Providers.Where(p => p.Enabled).ToList();
+        if (enabled.Count == 0)
+        {
+            player.SendWarningMessage("No vote reward providers are currently enabled.");
+            return;
+        }
+        foreach (var provider in enabled)
             player.SendInfoMessage($"{provider.DisplayName}: {(provider.VotingUrl.Length > 0 ? provider.VotingUrl : "ask an administrator for the voting link")}");
-        player.SendInfoMessage("After voting on Terraria-Servers.com use /vote claim. For TServerWeb use /vote tserverweb.");
+        player.SendInfoMessage("After voting on Terraria-Servers.com use /arkvote claim. For TServerWeb use /arkvote tserverweb.");
     }
 
     private void ShowStatus(TSPlayer player, VotingConfig cfg)
@@ -88,6 +121,19 @@ public sealed class VoteRewardsService : IDisposable
         player.SendInfoMessage($"Vote rewards claimed today: {total}/{cfg.MaximumRewardedVotesPerAccountPerDay} (UTC).");
         foreach (var provider in cfg.Providers.Where(p => p.Enabled))
             player.SendInfoMessage($"{provider.DisplayName}: {_db.CountVoteClaims(player.Account.ID, day, provider.Id)}/{provider.MaximumClaimsPerAccountPerDay}");
+    }
+
+    private static void ShowDebug(TSPlayer player, VotingConfig cfg)
+    {
+        var enabled = cfg.Providers.Where(p => p.Enabled).ToList();
+        player.SendInfoMessage($"[Vote Rewards] enabled={cfg.Enabled}, providers={cfg.Providers.Count}, enabled providers={enabled.Count}.");
+        if (enabled.Count == 0)
+        {
+            player.SendWarningMessage("[Vote Rewards] No enabled providers are configured.");
+            return;
+        }
+        foreach (var provider in enabled)
+            player.SendInfoMessage($"[Vote Rewards] id={provider.Id}, type={provider.Type}, max/day={provider.MaximumClaimsPerAccountPerDay}, voting URL={(string.IsNullOrWhiteSpace(provider.VotingUrl) ? "missing" : "set")}, API key={(string.IsNullOrWhiteSpace(provider.ApiKey) ? "missing" : "set")}, server ID={(string.IsNullOrWhiteSpace(provider.ServerId) ? "missing" : "set")}.");
     }
 
     private void EnforceCooldown(int userId, VotingConfig cfg)
@@ -116,7 +162,7 @@ public sealed class VoteRewardsService : IDisposable
     {
         if (string.IsNullOrWhiteSpace(answer)) EnforceCooldown(player.Account.ID, _config().Voting);
         else if (!_tserverWebCaptcha.ContainsKey(player.Account.ID))
-            throw new InvalidOperationException("Start the TServerWeb vote with /vote tserverweb before answering a CAPTCHA.");
+            throw new InvalidOperationException("Start the TServerWeb vote with /arkvote tserverweb before answering a CAPTCHA.");
         var url = "https://www.tserverweb.com/vote.php?user=" + Uri.EscapeDataString(player.Account.Name) +
                   "&sid=" + Uri.EscapeDataString(provider.ServerId);
         if (!string.IsNullOrWhiteSpace(answer)) url += "&answer=" + Uri.EscapeDataString(answer);
@@ -128,7 +174,7 @@ public sealed class VoteRewardsService : IDisposable
             case "captcha":
                 _tserverWebCaptcha[player.Account.ID] = response.Message;
                 player.SendInfoMessage("[TServerWeb] CAPTCHA: " + response.Message);
-                player.SendInfoMessage("Answer with /vote tserverweb <answer>");
+                player.SendInfoMessage("Answer with /arkvote tserverweb <answer>");
                 return;
             case "success" when !response.Message.Contains("wait 24 hours", StringComparison.OrdinalIgnoreCase):
                 _tserverWebCaptcha.TryRemove(player.Account.ID, out _);
@@ -146,7 +192,8 @@ public sealed class VoteRewardsService : IDisposable
         EnsureCaps(player, provider);
 
         var atomic = cfg.ToAtomic(provider.Rewards.CurrencyAmount);
-        var claimKey = $"vote:{provider.Id}:{player.Account.ID}:{day}";
+        var nextClaimNumber = _db.CountVoteClaims(player.Account.ID, day, provider.Id) + 1;
+        var claimKey = $"vote:{provider.Id}:{player.Account.ID}:{day}:{nextClaimNumber}";
         if (!_db.TryReserveVoteClaim(claimKey, player.Account.ID, player.Account.Name, provider.Id, day, atomic,
                 JsonConvert.SerializeObject(provider.Rewards.Items), JsonConvert.SerializeObject(provider.Rewards.Groups)))
             throw new InvalidOperationException("This vote reward is already claimed or being processed.");
