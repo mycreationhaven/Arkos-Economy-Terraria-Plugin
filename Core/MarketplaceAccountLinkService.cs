@@ -28,10 +28,10 @@ public sealed class MarketplaceAccountLinkService
             foreach (var key in _byAccount.Where(x => x.Value.UserId == userId).Select(x => x.Key).ToArray())
                 _byAccount.Remove(key);
 
-            var code = RandomNumberGenerator.GetInt32(0, 100_000_000).ToString("D8");
+            var code = RandomNumberGenerator.GetInt32(0, 1_000_000).ToString("D6");
             var salt = RandomNumberGenerator.GetBytes(16);
             var hash = Hash(code, salt);
-            var expires = DateTime.UtcNow.AddMinutes(10);
+            var expires = DateTime.UtcNow.AddMinutes(5);
             _byAccount[accountName] = new Challenge(userId, accountName, salt, hash, expires, 0);
             return new MarketplaceLinkChallenge(accountName, code, expires);
         }
@@ -42,7 +42,7 @@ public sealed class MarketplaceAccountLinkService
         accountName = accountName.Trim();
         code = code.Trim();
         webSubject = webSubject.Trim();
-        if (code.Length != 8 || !code.All(char.IsDigit))
+        if (code.Length != 6 || !code.All(char.IsDigit))
             throw new InvalidOperationException("Invalid or expired link code.");
 
         lock (_gate)
