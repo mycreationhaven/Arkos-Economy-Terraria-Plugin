@@ -40,7 +40,7 @@ public sealed class ArkoviaEconomyPlugin : TerrariaPlugin
     public override string Name => "Arkovia Economy";
     public override string Author => "My Creation Haven";
     public override string Description => "Treasury-backed Arkovia economy framework for TShock/Terraria.";
-    public override Version Version => new(1, 4, 0);
+    public override Version Version => new(1, 5, 0);
 
     public ArkoviaEconomyPlugin(Main game) : base(game) { }
 
