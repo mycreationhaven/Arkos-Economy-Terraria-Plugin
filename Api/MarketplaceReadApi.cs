@@ -38,7 +38,7 @@ public sealed class MarketplaceReadApi(EconomyDatabase db, Func<EconomyConfig> c
 
         _registered = true;
         if (!TShock.Config.Settings.RestApiEnabled)
-            Core.EconomyLog.Warn("[ArkoviaEconomy] Marketplace read API routes registered, but TShock RestApiEnabled is false.");
+            ArkoviaEconomy.Core.EconomyLog.Warn("[ArkoviaEconomy] Marketplace read API routes registered, but TShock RestApiEnabled is false.");
     }
 
     private object Status(RestRequestArgs args)
