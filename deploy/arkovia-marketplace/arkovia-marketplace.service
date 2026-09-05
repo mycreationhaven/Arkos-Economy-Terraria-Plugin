@@ -25,7 +25,8 @@ ProtectKernelModules=true
 ProtectControlGroups=true
 RestrictSUIDSGID=true
 LockPersonality=true
-MemoryDenyWriteExecute=true
+# .NET's JIT requires executable memory mappings; enabling this causes a startup SIGSEGV.
+MemoryDenyWriteExecute=false
 RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
 CapabilityBoundingSet=
 AmbientCapabilities=
