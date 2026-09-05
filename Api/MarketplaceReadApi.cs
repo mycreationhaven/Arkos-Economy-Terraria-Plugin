@@ -40,6 +40,16 @@ public sealed class MarketplaceReadApi(
             Listing,
             Permissions.MarketplaceApiRead));
 
+        var meCommand = new SecureRestCommand(
+            "Arkovia marketplace linked account",
+            "/marketplace/api/v1/me/{subject}",
+            Me,
+            Permissions.MarketplaceApiRead)
+        {
+            DoLog = false
+        };
+        TShock.RestApi.Register(meCommand);
+
         var linkCommand = new SecureRestCommand(
             "Arkovia marketplace account link",
             "/marketplace/api/v1/link/{account}/{code}/{subject}",
@@ -95,6 +105,25 @@ public sealed class MarketplaceReadApi(
         return result;
     }
 
+    private object Me(RestRequestArgs args)
+    {
+        if (!_active) return Disabled();
+        var subject = (args.Parameters["subject"] ?? string.Empty).Trim();
+        var link = db.GetWebAccountLinkBySubject(subject);
+        if (link is null)
+            return new RestObject("404") { Error = "No linked Terraria account was found." };
+
+        var cfg = config();
+        var ownerId = link.TShockUserId.ToString();
+        var result = new RestObject();
+        result["linked"] = true;
+        result["accountName"] = link.TShockAccountName;
+        result["linkedUtc"] = link.LinkedUtc;
+        result["listings"] = MarketplaceReadProjection.GetPlayerListings(db, cfg, ownerId, 100);
+        result["purchases"] = MarketplaceReadProjection.GetPlayerPurchases(db, cfg, ownerId, 100);
+        return result;
+    }
+
     private object LinkAccount(RestRequestArgs args)
     {
         if (!_active) return Disabled();
@@ -144,6 +173,33 @@ public sealed record MarketplaceListingView(
     string? RegionName,
     DateTime CreatedUtc);
 
+public sealed record MarketplaceUserListingView(
+    string ListingId,
+    string AssetId,
+    string AssetType,
+    string AssetName,
+    string ListingType,
+    long PriceAtomic,
+    decimal Price,
+    string Currency,
+    string Status,
+    DateTime? ReservedUntilUtc,
+    DateTime CreatedUtc,
+    DateTime UpdatedUtc);
+
+public sealed record MarketplacePurchaseView(
+    string SaleId,
+    string ListingId,
+    string AssetId,
+    string AssetType,
+    string AssetName,
+    long AmountAtomic,
+    decimal Amount,
+    string Currency,
+    string SellerType,
+    string SellerName,
+    DateTime PurchasedUtc);
+
 public static class MarketplaceReadProjection
 {
     public static IReadOnlyList<MarketplaceListingView> GetActiveListings(
@@ -170,6 +226,63 @@ public static class MarketplaceReadProjection
         if (listing is null || !string.Equals(listing.Status, "active", StringComparison.OrdinalIgnoreCase))
             return null;
         return ProjectActiveListing(db, config, listing);
+    }
+
+    public static IReadOnlyList<MarketplaceUserListingView> GetPlayerListings(
+        EconomyDatabase db,
+        EconomyConfig config,
+        string playerOwnerId,
+        int limit = 50)
+    {
+        var result = new List<MarketplaceUserListingView>();
+        foreach (var listing in db.GetMarketplaceListingsForOwner("player", playerOwnerId, limit))
+        {
+            var asset = db.GetAsset(listing.AssetId);
+            result.Add(new MarketplaceUserListingView(
+                listing.ListingId,
+                listing.AssetId,
+                asset?.AssetType ?? "unknown",
+                asset?.Name ?? "Unknown asset",
+                listing.ListingType,
+                listing.PriceAtomic,
+                config.FromAtomic(listing.PriceAtomic),
+                config.CurrencySymbol,
+                listing.Status,
+                listing.ReservedUntilUtc,
+                listing.CreatedUtc,
+                listing.UpdatedUtc));
+        }
+        return result;
+    }
+
+    public static IReadOnlyList<MarketplacePurchaseView> GetPlayerPurchases(
+        EconomyDatabase db,
+        EconomyConfig config,
+        string playerOwnerId,
+        int limit = 50)
+    {
+        var result = new List<MarketplacePurchaseView>();
+        foreach (var sale in db.GetMarketplaceSalesForBuyer("player", playerOwnerId, limit))
+        {
+            var asset = db.GetAsset(sale.AssetId);
+            var listing = db.GetMarketplaceListing(sale.ListingId);
+            var sellerName = string.Equals(sale.SellerOwnerType, "town", StringComparison.OrdinalIgnoreCase)
+                ? db.GetTown(sale.SellerOwnerId)?.Name ?? "Town"
+                : listing is null ? "Player" : db.GetAccountById(listing.SellerAccountId)?.Name ?? "Player";
+            result.Add(new MarketplacePurchaseView(
+                sale.SaleId,
+                sale.ListingId,
+                sale.AssetId,
+                asset?.AssetType ?? "unknown",
+                asset?.Name ?? "Unknown asset",
+                sale.AmountAtomic,
+                config.FromAtomic(sale.AmountAtomic),
+                config.CurrencySymbol,
+                sale.SellerOwnerType,
+                sellerName,
+                sale.CreatedUtc));
+        }
+        return result;
     }
 
     private static MarketplaceListingView? ProjectActiveListing(
