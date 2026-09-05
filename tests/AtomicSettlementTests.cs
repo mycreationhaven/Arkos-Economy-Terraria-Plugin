@@ -1,8 +1,15 @@
+using System.Runtime.CompilerServices;
 using ArkoviaEconomy.Database;
 using Microsoft.Data.Sqlite;
 
 internal static class AtomicSettlementTests
 {
+    [ModuleInitializer]
+    public static void Initialize()
+    {
+        Run();
+    }
+
     public static int Run()
     {
         var checks = 0;
