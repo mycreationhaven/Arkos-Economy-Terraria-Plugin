@@ -23,6 +23,16 @@ public sealed class MarketplaceMutationApi(
         if (_registered || !config().Api.EnablePublicReadApi)
             return;
 
+        var list = new SecureRestCommand(
+            "Arkovia marketplace web list",
+            "/marketplace/api/v1/mutate/list/{subject}/{assetId}/{priceAtomic}/{operationKey}",
+            List,
+            Permissions.MarketplaceApiWrite)
+        {
+            DoLog = false
+        };
+        TShock.RestApi.Register(list);
+
         var buy = new SecureRestCommand(
             "Arkovia marketplace web buy",
             "/marketplace/api/v1/mutate/buy/{subject}/{listingId}/{operationKey}",
@@ -44,6 +54,38 @@ public sealed class MarketplaceMutationApi(
         TShock.RestApi.Register(cancel);
 
         _registered = true;
+    }
+
+    private object List(RestRequestArgs args)
+    {
+        if (!_active) return Disabled();
+        try
+        {
+            var subject = args.Parameters["subject"] ?? string.Empty;
+            var assetId = args.Parameters["assetId"] ?? string.Empty;
+            var operationKey = args.Parameters["operationKey"] ?? string.Empty;
+            if (!long.TryParse(args.Parameters["priceAtomic"], out var priceAtomic) || priceAtomic <= 0)
+                return new RestObject("400") { Error = "Invalid listing price." };
+
+            var operation = mutations.List(subject, assetId, priceAtomic, operationKey);
+            var listing = db.GetMarketplaceListing(operation.ResultId);
+            if (listing is null)
+                return new RestObject("500") { Error = "Marketplace listing result could not be loaded." };
+
+            var result = new RestObject();
+            result["operationKey"] = operation.OperationKey;
+            result["status"] = operation.Status;
+            result["listingId"] = listing.ListingId;
+            result["assetId"] = listing.AssetId;
+            result["priceAtomic"] = listing.PriceAtomic;
+            result["price"] = config().FromAtomic(listing.PriceAtomic);
+            result["currency"] = config().CurrencySymbol;
+            return result;
+        }
+        catch (InvalidOperationException ex)
+        {
+            return new RestObject("400") { Error = ex.Message };
+        }
     }
 
     private object Buy(RestRequestArgs args)
