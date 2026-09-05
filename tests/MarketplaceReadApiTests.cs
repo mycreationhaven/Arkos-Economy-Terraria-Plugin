@@ -49,7 +49,7 @@ internal static class MarketplaceReadApiTests
         Equal<string?>(null, collectibleView.RegionName);
 
         var propertyView = listings.Single(x => x.ListingId == propertyListing.ListingId);
-        Equal("property", propertyView.AssetType);
+        Equal("house", propertyView.AssetType);
         Equal("Garden House", propertyView.AssetName);
         Equal("town", propertyView.SellerType);
         Equal("Bellweather", propertyView.SellerName);
