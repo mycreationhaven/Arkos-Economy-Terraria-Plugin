@@ -166,6 +166,7 @@ checks += ProgressionTests.Run();
 checks += PortalCodeTests.Run();
 checks += AtomicSettlementTests.Run();
 checks += AssetOwnershipTests.Run();
+checks += TownTests.Run();
 connection.Close();
 SqliteConnection.ClearAllPools();
 File.Delete(databasePath);
