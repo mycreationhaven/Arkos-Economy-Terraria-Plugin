@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Net;
 using System.Security.Cryptography;
 using System.Text;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.RateLimiting;
 using System.Threading.RateLimiting;
 
@@ -15,6 +16,14 @@ builder.Services.AddHttpClient<TShockMarketplaceClient>((sp, client) =>
 {
     client.BaseAddress = new Uri(sp.GetRequiredService<MarketplaceSettings>().TShockBaseUrl);
     client.Timeout = TimeSpan.FromSeconds(15);
+});
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+    options.KnownProxies.Add(IPAddress.Loopback);
+    options.KnownProxies.Add(IPAddress.IPv6Loopback);
 });
 builder.Services.AddRateLimiter(options =>
 {
@@ -39,6 +48,7 @@ builder.Services.AddRateLimiter(options =>
 });
 
 var app = builder.Build();
+app.UseForwardedHeaders();
 app.Use(async (context, next) =>
 {
     context.Response.Headers["X-Content-Type-Options"] = "nosniff";
@@ -47,6 +57,8 @@ app.Use(async (context, next) =>
     context.Response.Headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()";
     context.Response.Headers["Content-Security-Policy"] =
         "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'";
+    if (context.Request.IsHttps)
+        context.Response.Headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains";
     await next();
 });
 app.UseRateLimiter();
@@ -55,6 +67,14 @@ app.UseStaticFiles();
 app.MapGet("/", () => Results.Redirect("/marketplace"));
 app.MapGet("/marketplace", (IWebHostEnvironment env) =>
     Results.File(Path.Combine(env.WebRootPath, "index.html"), "text/html; charset=utf-8"));
+app.MapGet("/healthz", () => Results.Ok(new { status = "ok", service = "arkovia-marketplace" }));
+app.MapGet("/readyz", async (TShockMarketplaceClient tshock, CancellationToken ct) =>
+{
+    var upstream = await tshock.GetAsync("/marketplace/api/v1/status", ct);
+    return upstream.IsSuccess
+        ? Results.Ok(new { status = "ready", upstream = "tshock" })
+        : Results.Json(new { status = "degraded", upstream = "tshock" }, statusCode: StatusCodes.Status503ServiceUnavailable);
+});
 
 app.MapGet("/api/status", async (TShockMarketplaceClient tshock, CancellationToken ct) =>
     await Proxy(await tshock.GetAsync("/marketplace/api/v1/status", ct)));
