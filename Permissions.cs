@@ -8,6 +8,7 @@ public static class Permissions
     public const string Shop = "arkoviaeconomy.shop";
     public const string Market = "arkoviaeconomy.market";
     public const string MarketplaceApiRead = "arkoviaeconomy.api.marketplace.read";
+    public const string MarketplaceApiLink = "arkoviaeconomy.api.marketplace.link";
     public const string Jobs = "arkoviaeconomy.jobs";
     public const string TreasuryView = "arkoviaeconomy.treasury.view";
     public const string Vote = "arkoviaeconomy.vote";
