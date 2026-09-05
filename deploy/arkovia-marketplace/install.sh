@@ -9,7 +9,6 @@ fi
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 SERVICE_NAME="arkovia-marketplace"
 SERVICE_USER="arkovia-market"
-SERVICE_GROUP="arkovia-market"
 INSTALL_DIR="/opt/arkovia/marketplace"
 STAGE_DIR="/opt/arkovia/.marketplace-stage"
 ENV_DIR="/etc/arkovia"
@@ -27,6 +26,9 @@ require_command() {
 require_command dotnet
 require_command systemctl
 require_command install
+require_command curl
+require_command openssl
+require_command useradd
 
 if command -v nginx >/dev/null 2>&1; then
   HAVE_NGINX=1
@@ -60,13 +62,11 @@ if [[ ! -f "$ENV_FILE" ]]; then
     exit 1
   fi
 
-  SUBJECT_SECRET="$(openssl rand -hex 48 2>/dev/null || true)"
+  SUBJECT_SECRET="$(openssl rand -hex 48)"
   if [[ ${#SUBJECT_SECRET} -lt 32 ]]; then
-    SUBJECT_SECRET="$(python3 - <<'PY'
-import secrets
-print(secrets.token_hex(48))
-PY
-)"
+    echo "Could not generate a sufficiently long marketplace subject secret." >&2
+    rm -rf "$STAGE_DIR"
+    exit 1
   fi
 
   umask 077
