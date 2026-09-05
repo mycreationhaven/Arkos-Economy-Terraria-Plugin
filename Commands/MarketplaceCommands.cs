@@ -70,14 +70,11 @@ public sealed class MarketplaceCommands
                 case "weblink":
                 {
                     var existing = _db.GetWebAccountLinkByUser(identity.Id);
-                    if (existing is not null)
-                    {
-                        args.Player.SendInfoMessage("Your Terraria account is already linked to the marketplace website.");
-                        break;
-                    }
                     var challenge = _links.Issue(identity.Id, identity.Name);
                     args.Player.SendSuccessMessage($"Marketplace link code: {challenge.Code}");
-                    args.Player.SendInfoMessage("Enter this code on the Arkovia marketplace while signed in. It expires in 5 minutes and can be used once.");
+                    args.Player.SendInfoMessage(existing is null
+                        ? "Enter this code on the Arkovia marketplace. It expires in 5 minutes and can be used once."
+                        : "Your marketplace account is already linked. Use this fresh code to sign in again. It expires in 5 minutes and can be used once.");
                     break;
                 }
                 case "listings":
