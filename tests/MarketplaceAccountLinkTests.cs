@@ -27,10 +27,13 @@ internal static class MarketplaceAccountLinkTests
         db.EnsureSchema();
         var links = new MarketplaceAccountLinkService(db);
 
+        var issuedAt = DateTime.UtcNow;
         var challenge = links.Issue(101, "LinkPlayer");
-        Equal(8, challenge.Code.Length);
+        Equal(6, challenge.Code.Length);
         Equal(true, challenge.Code.All(char.IsDigit));
-        Reject(() => links.Redeem("LinkPlayer", "00000000" == challenge.Code ? "11111111" : "00000000", "web:user-101"));
+        Equal(true, challenge.ExpiresUtc >= issuedAt.AddMinutes(4).AddSeconds(55));
+        Equal(true, challenge.ExpiresUtc <= DateTime.UtcNow.AddMinutes(5).AddSeconds(5));
+        Reject(() => links.Redeem("LinkPlayer", "000000" == challenge.Code ? "111111" : "000000", "web:user-101"));
 
         var linked = links.Redeem("LinkPlayer", challenge.Code, "web:user-101");
         Equal(101, linked.TShockUserId);
@@ -51,7 +54,7 @@ internal static class MarketplaceAccountLinkTests
         Reject(() => links.Redeem("LinkPlayer", conflict.Code, "web:another-user"));
 
         var locked = links.Issue(303, "LockedPlayer");
-        var wrong = locked.Code == "99999999" ? "88888888" : "99999999";
+        var wrong = locked.Code == "999999" ? "888888" : "999999";
         for (var i = 0; i < 5; i++) Reject(() => links.Redeem("LockedPlayer", wrong, "web:user-303"));
         Reject(() => links.Redeem("LockedPlayer", locked.Code, "web:user-303"));
 
