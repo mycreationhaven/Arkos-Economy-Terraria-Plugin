@@ -20,6 +20,7 @@ public sealed partial class EconomyDatabase
             new SqlColumn("Payload", MySqlDbType.Text)));
         EnsureAssetSchema();
         EnsureTownSchema();
+        EnsureMarketplaceSchema();
     }
 
     public EconomyOperation? GetOperation(string id)

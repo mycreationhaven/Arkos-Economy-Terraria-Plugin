@@ -25,7 +25,7 @@ public sealed class TownCommands
         yield return new Command(Permissions.Town, Town, "town")
         {
             AllowServer = false,
-            HelpText = "/town create|info|invite|accept|leave|balance|deposit|withdraw|claim"
+            HelpText = "/town create|info|invite|accept|leave|promote|demote|kick|transfer|balance|deposit|withdraw|claim|unclaim"
         };
         yield return new Command(Permissions.Property, Property, "property")
         {
@@ -45,6 +45,13 @@ public sealed class TownCommands
     {
         if (!args.Player.HasPermission(permission))
             throw new InvalidOperationException("Missing permission: " + permission);
+    }
+
+    private static int ResolveUserId(string accountName)
+    {
+        var target = TShock.UserAccounts.GetUserAccountByName(accountName)
+            ?? throw new InvalidOperationException("TShock account not found.");
+        return target.ID;
     }
 
     private long ParseAmount(string text)
@@ -87,7 +94,8 @@ public sealed class TownCommands
                     if (town is null) throw new InvalidOperationException("Town not found.");
                     var treasury = _towns.GetTreasuryAccount(town);
                     var members = _db.GetTownMembers(town.TownId);
-                    args.Player.SendInfoMessage($"{town.Name} | members: {members.Count} | treasury: {_config.Current.Format(treasury.WalletAtomic)}");
+                    var properties = _db.GetTownProperties(town.TownId);
+                    args.Player.SendInfoMessage($"{town.Name} | members: {members.Count} | properties: {properties.Count} | treasury: {_config.Current.Format(treasury.WalletAtomic)}");
                     args.Player.SendInfoMessage($"Town ID: {town.TownId} | Asset: {town.AssetId}");
                     break;
                 }
@@ -118,6 +126,47 @@ public sealed class TownCommands
                     _towns.Leave(identity.Id);
                     args.Player.SendSuccessMessage("You left your town.");
                     break;
+                case "promote":
+                {
+                    RequirePermission(args, Permissions.TownManage);
+                    if (args.Parameters.Count != 2)
+                        throw new InvalidOperationException("Usage: /town promote <TShockAccount>");
+                    var town = _towns.RequireTownForUser(identity.Id);
+                    _towns.Promote(town, identity.Id, ResolveUserId(args.Parameters[1]));
+                    args.Player.SendSuccessMessage($"Promoted {args.Parameters[1]} to town assistant.");
+                    break;
+                }
+                case "demote":
+                {
+                    RequirePermission(args, Permissions.TownManage);
+                    if (args.Parameters.Count != 2)
+                        throw new InvalidOperationException("Usage: /town demote <TShockAccount>");
+                    var town = _towns.RequireTownForUser(identity.Id);
+                    _towns.Demote(town, identity.Id, ResolveUserId(args.Parameters[1]));
+                    args.Player.SendSuccessMessage($"Demoted {args.Parameters[1]} to resident.");
+                    break;
+                }
+                case "kick":
+                {
+                    RequirePermission(args, Permissions.TownManage);
+                    if (args.Parameters.Count != 2)
+                        throw new InvalidOperationException("Usage: /town kick <TShockAccount>");
+                    var town = _towns.RequireTownForUser(identity.Id);
+                    _towns.Kick(town, identity.Id, ResolveUserId(args.Parameters[1]));
+                    args.Player.SendSuccessMessage($"Removed {args.Parameters[1]} from {town.Name}.");
+                    break;
+                }
+                case "transfer":
+                case "transferleadership":
+                {
+                    RequirePermission(args, Permissions.TownManage);
+                    if (args.Parameters.Count != 2)
+                        throw new InvalidOperationException("Usage: /town transfer <TShockAccount>");
+                    var town = _towns.RequireTownForUser(identity.Id);
+                    _towns.TransferLeadership(town, identity.Id, ResolveUserId(args.Parameters[1]));
+                    args.Player.SendSuccessMessage($"Transferred leadership of {town.Name} to {args.Parameters[1]}. You are now an assistant.");
+                    break;
+                }
                 case "balance":
                 {
                     var town = _towns.RequireTownForUser(identity.Id);
@@ -160,6 +209,17 @@ public sealed class TownCommands
                     args.Player.SendInfoMessage($"Property ID: {property.PropertyId} | Asset: {property.AssetId}");
                     break;
                 }
+                case "unclaim":
+                {
+                    RequirePermission(args, Permissions.TownClaim);
+                    if (args.Parameters.Count < 2)
+                        throw new InvalidOperationException("Usage: /town unclaim <TShock region name>");
+                    var town = _towns.RequireTownForUser(identity.Id);
+                    var regionName = string.Join(" ", args.Parameters.Skip(1));
+                    _towns.UnclaimRegion(town, identity.Id, regionName);
+                    args.Player.SendSuccessMessage($"Unclaimed region {regionName} from {town.Name}.");
+                    break;
+                }
                 case "help":
                 default:
                     Help(args);
@@ -195,7 +255,8 @@ public sealed class TownCommands
 
     private static void Help(CommandArgs args)
     {
-        args.Player.SendInfoMessage("/town create <name> | /town info [name] | /town invite <account> | /town accept <town>");
-        args.Player.SendInfoMessage("/town leave | /town balance | /town deposit <amount> | /town withdraw <amount> | /town claim <region>");
+        args.Player.SendInfoMessage("/town create <name> | /town info [name] | /town invite <account> | /town accept <town> | /town leave");
+        args.Player.SendInfoMessage("/town promote|demote|kick|transfer <account> | /town balance | /town deposit <amount> | /town withdraw <amount>");
+        args.Player.SendInfoMessage("/town claim <region> | /town unclaim <region> | /property info <region>");
     }
 }

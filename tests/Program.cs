@@ -79,7 +79,6 @@ economy.AdminAdjust(treasury, -50, "Admin treasury deduction", "Server");
 Equal(before + 25, economy.GetTreasury().WalletAtomic);
 Reject(() => economy.AdminAdjust(treasury, -long.MaxValue, "overdraw", "Server"));
 Equal("Server", db.GetTransactions(treasury.Id, 1)[0].Actor);
-// A ledger write failure rolls back BOTH wallet updates.
 var treasuryBeforeFailure = economy.GetTreasury().WalletAtomic;
 db.SetBalances(player.Id, 100, 500);
 using (var command = connection.CreateCommand())
@@ -100,7 +99,6 @@ using (var command = connection.CreateCommand())
     command.ExecuteNonQuery();
 }
 db.SetBalances(player.Id, 100, cfg.ToAtomic(50));
-// Existing eight-decimal balances remain untouched; accidental changes are blocked.
 db.BindCurrency(cfg);
 cfg.Decimals = 6;
 Reject(() => db.BindCurrency(cfg));
@@ -147,8 +145,7 @@ handler.Response = "{\"balanceNQT\":\"100000000\"}";
 Equal(100000000L, await node.GetAccountBalanceAtomicAsync(default));
 Equal(true, handler.Url!.Contains("requestType=getAccount&"));
 handler.Response = "{\"balanceNQT\":\"invalid\"}";
-await RejectAsync(() => node.GetAccountBalanceAtomicAsync(default));
-// Funding conversion and repeated synchronization use selected holdings only.
+await RejectAsync(() => node.GetAccountBalanceAtomicAsync("ARK-test", default));
 cfg.CurrencyId = "123";
 cfg.BlockchainDecimals = 2;
 Equal("CURRENCY_TRANSFER", cfg.FundingEventType);
@@ -167,6 +164,8 @@ checks += PortalCodeTests.Run();
 checks += AtomicSettlementTests.Run();
 checks += AssetOwnershipTests.Run();
 checks += TownTests.Run();
+checks += TownGovernanceTests.Run();
+checks += MarketplaceTests.Run();
 connection.Close();
 SqliteConnection.ClearAllPools();
 File.Delete(databasePath);
