@@ -22,6 +22,7 @@ public sealed class ArkoviaEconomyPlugin : TerrariaPlugin
     private EconomyService? _economy;
     private TownService? _towns;
     private MarketplaceService? _marketplace;
+    private MarketplaceAccountLinkService? _marketplaceLinks;
     private MarketplaceReadApi? _marketplaceReadApi;
     private ArkoviaNodeClient? _node;
     private WalletClaimClient? _walletClaimClient;
@@ -58,8 +59,9 @@ public sealed class ArkoviaEconomyPlugin : TerrariaPlugin
         _marketplace = new MarketplaceService(_database, _economy, () => _config.Current);
         _marketplace.GetEscrowAccount();
         _marketplace.CleanupExpiredReservations();
+        _marketplaceLinks = new MarketplaceAccountLinkService(_database);
 
-        _marketplaceReadApi = new MarketplaceReadApi(_database, () => _config.Current);
+        _marketplaceReadApi = new MarketplaceReadApi(_database, () => _config.Current, _marketplaceLinks);
         _marketplaceReadApi.Register();
 
         _walletClaimClient = new WalletClaimClient();
@@ -76,7 +78,7 @@ public sealed class ArkoviaEconomyPlugin : TerrariaPlugin
         _commands = handlers.Build().ToList();
 
         _commands.AddRange(new TownCommands(_towns, _database, _config).Build());
-        _commands.AddRange(new MarketplaceCommands(_marketplace, _towns, _database, _config).Build());
+        _commands.AddRange(new MarketplaceCommands(_marketplace, _marketplaceLinks, _towns, _database, _config).Build());
 
         _voting = new VoteRewardsService(_database, _economy, () => _config.Current);
         _commands.AddRange(_voting.BuildCommands());
