@@ -163,7 +163,7 @@ public sealed partial class EconomyDatabase
         return result;
     }
 
-    private static ArkoviaAsset ReadAsset(System.Data.IDataReader r)
+    private static ArkoviaAsset ReadAsset(QueryResult r)
         => new(
             r.Get<string>("AssetId"), r.Get<string>("AssetType"), r.Get<string>("Name"),
             r.Get<string>("OwnerType"), r.Get<string>("OwnerId"), r.Get<string>("Status"),
