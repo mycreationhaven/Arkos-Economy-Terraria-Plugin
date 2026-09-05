@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Arkovia Marketplace</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <span class="eyebrow">ARKOVIA NETWORK</span>
+      <h1>Marketplace</h1>
+    </div>
+    <div id="sessionArea" class="session-area"></div>
+  </header>
+
+  <main>
+    <section class="hero panel">
+      <div>
+        <span class="pill">Player-to-player trading</span>
+        <h2>Buy, sell, and manage your Arkovia assets.</h2>
+        <p>All ownership, balances, escrow, and settlement are verified by the Terraria server. The website never receives the TShock REST token.</p>
+      </div>
+      <div class="hero-stat">
+        <span>Currency</span>
+        <strong id="currencyLabel">ARKOS</strong>
+      </div>
+    </section>
+
+    <section id="linkPanel" class="panel hidden">
+      <h2>Link your Terraria account</h2>
+      <p>In game, run <code>/market link</code>, then enter your Terraria account name and the 8-digit code here.</p>
+      <form id="linkForm" class="form-row">
+        <label>Terraria account<input id="accountInput" maxlength="64" autocomplete="username" required></label>
+        <label>8-digit code<input id="codeInput" inputmode="numeric" pattern="[0-9]{8}" maxlength="8" autocomplete="one-time-code" required></label>
+        <button type="submit">Link account</button>
+      </form>
+      <div id="linkMessage" class="message"></div>
+    </section>
+
+    <section class="section-head">
+      <div><span class="eyebrow">LIVE MARKET</span><h2>Available listings</h2></div>
+      <button id="refreshButton" class="secondary">Refresh</button>
+    </section>
+    <section id="listingGrid" class="grid"></section>
+    <div id="marketMessage" class="message"></div>
+
+    <section id="accountPanel" class="hidden">
+      <div class="section-head"><div><span class="eyebrow">YOUR ACCOUNT</span><h2>Sellable assets</h2></div></div>
+      <section id="assetGrid" class="grid"></section>
+
+      <div class="section-head"><div><span class="eyebrow">YOUR ACTIVITY</span><h2>Your listings</h2></div></div>
+      <section id="myListingGrid" class="grid"></section>
+
+      <div class="section-head"><div><span class="eyebrow">PURCHASE HISTORY</span><h2>Your purchases</h2></div></div>
+      <section id="purchaseGrid" class="grid"></section>
+    </section>
+  </main>
+
+  <dialog id="sellDialog">
+    <form id="sellForm" method="dialog" class="dialog-card">
+      <button type="button" id="closeSell" class="icon-button" aria-label="Close">×</button>
+      <span class="eyebrow">CREATE LISTING</span>
+      <h2 id="sellAssetName">Sell asset</h2>
+      <input id="sellAssetId" type="hidden">
+      <label>Price in <span id="sellCurrency">ARKOS</span><input id="sellPrice" type="text" inputmode="decimal" placeholder="25.00" required></label>
+      <button type="submit">Create listing</button>
+      <div id="sellMessage" class="message"></div>
+    </form>
+  </dialog>
+
+  <script src="/app.js" defer></script>
+</body>
+</html>
