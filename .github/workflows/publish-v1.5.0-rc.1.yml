@@ -1,0 +1,43 @@
+name: Publish v1.5.0-rc.1
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/publish-v1.5.0-rc.1.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+      - name: Build plugin
+        run: dotnet build -c Release
+      - name: Run settlement and regression tests
+        run: dotnet run --project tests/ArkoviaEconomy.Tests.csproj -c Release
+      - name: Run marketplace web smoke tests
+        run: node tests/marketplace_web_smoke.js
+      - name: Build marketplace service
+        run: dotnet build services/ArkoviaMarketplace/ArkoviaMarketplace.csproj -c Release
+      - name: Prepare release files
+        run: |
+          mkdir -p release-dist
+          cp bin/Release/net9.0/ArkoviaEconomy.dll release-dist/ArkoviaEconomy.dll
+          (cd release-dist && sha256sum ArkoviaEconomy.dll > ArkoviaEconomy.dll.sha256)
+      - name: Create v1.5.0-rc.1 release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create v1.5.0-rc.1 \
+            release-dist/ArkoviaEconomy.dll \
+            release-dist/ArkoviaEconomy.dll.sha256 \
+            --target "$GITHUB_SHA" \
+            --title 'Arkovia Economy v1.5.0-rc.1 — Marketplace, Inventory, Towns & Stocks' \
+            --notes 'Major platform release since v1.4.0-rc.1: atomic economy settlement hardening; stable transferable assets; towns, governance, claims and property; marketplace escrow and town-property settlement; secure web marketplace sessions and account linking; six-digit five-minute re-authentication codes; live online Terraria inventory viewing and website item listing; item escrow and claim delivery; player web profiles; stock quotes, holdings and primary purchases; clickable scrolling ARKOVIA EXCHANGE marquee; /stocks and /stock commands; marketplace /market alias; REST route fixes and production deployment hardening. Includes ArkoviaEconomy.dll and its SHA-256 checksum.' \
+            --prerelease
