@@ -4,6 +4,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.Extensions.Caching.Memory;
 using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -12,6 +13,13 @@ builder.Logging.AddFilter("System.Net.Http.HttpClient", LogLevel.Warning);
 var settings = MarketplaceSettings.FromEnvironment();
 builder.Services.AddSingleton(settings);
 builder.Services.AddSingleton<MarketplaceSessionStore>();
+builder.Services.AddMemoryCache();
+builder.Services.AddHttpClient("terraria-wiki", client =>
+{
+    client.BaseAddress = new Uri("https://terraria.wiki.gg/");
+    client.Timeout = TimeSpan.FromSeconds(12);
+    client.DefaultRequestHeaders.UserAgent.ParseAdd("ArkoviaMarketplace/1.0 (+https://arkovia-node1.mywire.org/marketplace)");
+});
 builder.Services.AddHttpClient<TShockMarketplaceClient>((sp, client) =>
 {
     client.BaseAddress = new Uri(sp.GetRequiredService<MarketplaceSettings>().TShockBaseUrl);
@@ -92,6 +100,32 @@ app.MapGet("/api/inventory", async (HttpContext context, MarketplaceSessionStore
 {
     if (!sessions.TryGet(context, out var session)) return Results.Unauthorized();
     return await Proxy(await tshock.GetAsync($"/marketplace/api/v1/player/inventory/{Uri.EscapeDataString(session.WebSubject)}", ct));
+});
+
+app.MapGet("/api/item-image/{itemId:int}", async (int itemId, string? name, IHttpClientFactory clients, IMemoryCache cache, CancellationToken ct) =>
+{
+    if (itemId <= 0 || itemId > 100000) return Results.NotFound();
+    var cleanName = (name ?? string.Empty).Trim();
+    if (cleanName.Length is < 1 or > 128 || cleanName.Any(c => char.IsControl(c) || c is '/' or '\\'))
+        return Results.NotFound();
+
+    var cacheKey = $"terraria-item-image:{itemId}:{cleanName}";
+    if (cache.TryGetValue(cacheKey, out byte[]? cached) && cached is { Length: > 0 })
+        return Results.File(cached, "image/png", enableRangeProcessing: false);
+
+    var fileName = cleanName.Replace(' ', '_') + ".png";
+    var client = clients.CreateClient("terraria-wiki");
+    using var request = new HttpRequestMessage(HttpMethod.Get, "wiki/Special:Redirect/file/" + Uri.EscapeDataString(fileName));
+    request.Headers.Referrer = new Uri("https://terraria.wiki.gg/");
+    using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct);
+    if (!response.IsSuccessStatusCode || response.Content.Headers.ContentType?.MediaType != "image/png")
+        return Results.NotFound();
+    var length = response.Content.Headers.ContentLength;
+    if (length is > 1_000_000) return Results.NotFound();
+    var bytes = await response.Content.ReadAsByteArrayAsync(ct);
+    if (bytes.Length is < 1 or > 1_000_000) return Results.NotFound();
+    cache.Set(cacheKey, bytes, TimeSpan.FromDays(7));
+    return Results.File(bytes, "image/png", enableRangeProcessing: false);
 });
 
 app.MapGet("/api/session", (HttpContext context, MarketplaceSessionStore sessions) =>
