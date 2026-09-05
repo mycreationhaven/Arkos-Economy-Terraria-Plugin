@@ -119,6 +119,7 @@ public sealed class MarketplaceReadApi(
         result["linked"] = true;
         result["accountName"] = link.TShockAccountName;
         result["linkedUtc"] = link.LinkedUtc;
+        result["sellableAssets"] = MarketplaceReadProjection.GetPlayerSellableAssets(db, ownerId, 100);
         result["listings"] = MarketplaceReadProjection.GetPlayerListings(db, cfg, ownerId, 100);
         result["purchases"] = MarketplaceReadProjection.GetPlayerPurchases(db, cfg, ownerId, 100);
         return result;
@@ -173,6 +174,13 @@ public sealed record MarketplaceListingView(
     string? RegionName,
     DateTime CreatedUtc);
 
+public sealed record MarketplaceSellableAssetView(
+    string AssetId,
+    string AssetType,
+    string AssetName,
+    int Version,
+    DateTime UpdatedUtc);
+
 public sealed record MarketplaceUserListingView(
     string ListingId,
     string AssetId,
@@ -226,6 +234,28 @@ public static class MarketplaceReadProjection
         if (listing is null || !string.Equals(listing.Status, "active", StringComparison.OrdinalIgnoreCase))
             return null;
         return ProjectActiveListing(db, config, listing);
+    }
+
+    public static IReadOnlyList<MarketplaceSellableAssetView> GetPlayerSellableAssets(
+        EconomyDatabase db,
+        string playerOwnerId,
+        int limit = 50)
+    {
+        var result = new List<MarketplaceSellableAssetView>();
+        foreach (var asset in db.GetAssetsForOwner("player", playerOwnerId, "active", limit))
+        {
+            // Region/property assets use a separate policy flow because ownership also controls
+            // TShock region ACLs. Town assets are governance objects, not ordinary player goods.
+            if (asset.AssetType is "town" or "land" or "property")
+                continue;
+            result.Add(new MarketplaceSellableAssetView(
+                asset.AssetId,
+                asset.AssetType,
+                asset.Name,
+                asset.Version,
+                asset.UpdatedUtc));
+        }
+        return result;
     }
 
     public static IReadOnlyList<MarketplaceUserListingView> GetPlayerListings(
