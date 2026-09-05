@@ -30,6 +30,8 @@ config.json
 *secret*phrase*
 *private*key*
 *api*key*
+*.env
+!*.env.example
 
 # Wallet recovery material
 wallet-recovery/
