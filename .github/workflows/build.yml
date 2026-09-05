@@ -18,6 +18,7 @@ jobs:
       - run: dotnet publish services/ArkoviaSigner/ArkoviaSigner.csproj -c Release -o signer-dist
       - run: dotnet build services/ArkoviaMarketplace/ArkoviaMarketplace.csproj -c Release
       - run: node tests/marketplace_web_smoke.js
+      - run: bash -n deploy/arkovia-marketplace/install.sh
       - run: dotnet publish services/ArkoviaMarketplace/ArkoviaMarketplace.csproj -c Release -o marketplace-dist
       - uses: actions/upload-artifact@v4
         with:
