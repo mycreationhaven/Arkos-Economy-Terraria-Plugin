@@ -16,7 +16,7 @@ The project is intentionally server-authoritative. Browsers are never trusted to
 Version 1.5 expands the plugin from a gameplay economy into a broader server platform:
 
 - live website marketplace with linked Terraria accounts;
-- six-digit `/market link` codes that expire after five minutes;
+- six-digit `/market link` codes that expire after five minutes, including fresh re-authentication codes for accounts that are already permanently linked;
 - live in-game inventory visibility on the website while the player is online;
 - selecting an inventory slot, quantity, and total ARKOS price from the website;
 - removal of listed items from the live Terraria inventory into marketplace escrow;
@@ -136,6 +136,8 @@ In Terraria:
 The plugin returns a cryptographically generated **six-digit, single-use code**. The code expires after **five minutes** and allows at most five failed guesses.
 
 Enter the Terraria account name and code on the marketplace. The website derives a stable opaque subject from the normalized account name using a server-side HMAC secret and keeps the TShock REST credential entirely server-side.
+
+If the Terraria account is already permanently linked but the browser session has expired or the marketplace service has restarted, run `/market link` again. The existing ownership link is preserved and the plugin issues a fresh six-digit, five-minute sign-in code so the player can safely re-authenticate without deleting or duplicating the marketplace profile.
 
 ## Player profile
 
