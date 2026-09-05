@@ -16,6 +16,9 @@ jobs:
       - run: dotnet build services/ArkoviaSigner/ArkoviaSigner.csproj -c Release
       - run: python3 tests/signer_smoke.py
       - run: dotnet publish services/ArkoviaSigner/ArkoviaSigner.csproj -c Release -o signer-dist
+      - run: dotnet build services/ArkoviaMarketplace/ArkoviaMarketplace.csproj -c Release
+      - run: node tests/marketplace_web_smoke.js
+      - run: dotnet publish services/ArkoviaMarketplace/ArkoviaMarketplace.csproj -c Release -o marketplace-dist
       - uses: actions/upload-artifact@v4
         with:
           name: ArkoviaEconomy
@@ -24,3 +27,7 @@ jobs:
         with:
           name: ArkoviaSigner
           path: signer-dist/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ArkoviaMarketplace
+          path: marketplace-dist/
