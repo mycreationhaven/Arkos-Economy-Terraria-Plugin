@@ -164,6 +164,8 @@ Equal(preFunding + cfg.ToAtomic(1.23m), economy.GetTreasury().WalletAtomic);
 checks += await SettlementTests.RunAsync();
 checks += ProgressionTests.Run();
 checks += PortalCodeTests.Run();
+checks += AtomicSettlementTests.Run();
+checks += AssetOwnershipTests.Run();
 connection.Close();
 SqliteConnection.ClearAllPools();
 File.Delete(databasePath);
