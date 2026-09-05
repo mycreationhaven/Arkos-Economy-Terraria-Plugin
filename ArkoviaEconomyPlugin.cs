@@ -22,6 +22,7 @@ public sealed class ArkoviaEconomyPlugin : TerrariaPlugin
     private EconomyService? _economy;
     private TownService? _towns;
     private MarketplaceService? _marketplace;
+    private MarketplaceReadApi? _marketplaceReadApi;
     private ArkoviaNodeClient? _node;
     private WalletClaimClient? _walletClaimClient;
     private ArkoviaFundingSynchronizer? _sync;
@@ -57,6 +58,9 @@ public sealed class ArkoviaEconomyPlugin : TerrariaPlugin
         _marketplace = new MarketplaceService(_database, _economy, () => _config.Current);
         _marketplace.GetEscrowAccount();
         _marketplace.CleanupExpiredReservations();
+
+        _marketplaceReadApi = new MarketplaceReadApi(_database, () => _config.Current);
+        _marketplaceReadApi.Register();
 
         _walletClaimClient = new WalletClaimClient();
         _sync = new ArkoviaFundingSynchronizer(_node, _database, _economy, () => _config.Current);
@@ -104,6 +108,7 @@ public sealed class ArkoviaEconomyPlugin : TerrariaPlugin
 
             _progression?.Dispose();
             _gameplay?.Dispose();
+            _marketplaceReadApi?.Dispose();
             _portal?.Dispose();
             _transfers?.Dispose();
             _sync?.Dispose();
