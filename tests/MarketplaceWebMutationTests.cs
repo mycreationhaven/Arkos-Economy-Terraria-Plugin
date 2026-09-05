@@ -41,6 +41,44 @@ internal static class MarketplaceWebMutationTests
         db.CreateOrConfirmWebAccountLink(101, "Web Seller", "web:seller-101");
         db.CreateOrConfirmWebAccountLink(202, "Web Buyer", "web:buyer-202");
 
+        // A linked seller can list an eligible asset. The server resolves ownership from
+        // the linked Terraria account and binds both asset and price to the idempotency key.
+        var webListAsset = db.CreateAsset("collectible", "Website Listed Relic", "player", "101");
+        var created = mutations.List("web:seller-101", webListAsset.AssetId, 125, "list-operation-0001");
+        Equal("completed", created.Status);
+        Equal("list", created.Kind);
+        var createdListing = db.GetMarketplaceListing(created.ResultId)!;
+        Equal(webListAsset.AssetId, createdListing.AssetId);
+        Equal(125L, createdListing.PriceAtomic);
+        Equal("active", createdListing.Status);
+        Equal("listed", db.GetAsset(webListAsset.AssetId)!.Status);
+
+        // Replaying the same listing request returns the same listing and does not create another one.
+        var listReplay = mutations.List("web:seller-101", webListAsset.AssetId, 125, "list-operation-0001");
+        Equal(created.ResultId, listReplay.ResultId);
+        Equal(1, db.GetMarketplaceListingsForOwner("player", "101", 100).Count(x => x.AssetId == webListAsset.AssetId));
+
+        // The same idempotency key cannot be reused with a changed price or another asset.
+        Reject(() => mutations.List("web:seller-101", webListAsset.AssetId, 126, "list-operation-0001"));
+        var otherListAsset = db.CreateAsset("collectible", "Other Website Relic", "player", "101");
+        Reject(() => mutations.List("web:seller-101", otherListAsset.AssetId, 125, "list-operation-0001"));
+
+        // Linked identity does not grant ownership of another player's assets.
+        var buyerOwnedAsset = db.CreateAsset("collectible", "Buyer Relic", "player", "202");
+        Reject(() => mutations.List("web:seller-101", buyerOwnedAsset.AssetId, 50, "list-operation-0002"));
+        Equal("active", db.GetAsset(buyerOwnedAsset.AssetId)!.Status);
+
+        // Property/governance assets remain on their dedicated policy path.
+        var landAsset = db.CreateAsset("land", "Policy Land", "player", "101");
+        Reject(() => mutations.List("web:seller-101", landAsset.AssetId, 500, "list-operation-0003"));
+        Equal("active", db.GetAsset(landAsset.AssetId)!.Status);
+
+        // The personalized web view only exposes active assets that this generic flow can list.
+        var sellable = ArkoviaEconomy.Api.MarketplaceReadProjection.GetPlayerSellableAssets(db, "101", 100);
+        Equal(true, sellable.Any(x => x.AssetId == otherListAsset.AssetId));
+        Equal(false, sellable.Any(x => x.AssetId == landAsset.AssetId));
+        Equal(false, sellable.Any(x => x.AssetId == webListAsset.AssetId));
+
         var asset = db.CreateAsset("collectible", "Web Relic", "player", "101");
         var listing = db.CreateMarketplaceListing(asset.AssetId, "player", "101", sellerAccountId, 200);
         var bought = mutations.Buy("web:buyer-202", listing.ListingId, "buy-operation-0001");
@@ -77,6 +115,7 @@ internal static class MarketplaceWebMutationTests
 
         Reject(() => mutations.Buy("web:missing-user", secondListing.ListingId, "buy-operation-0003"));
         Reject(() => mutations.Buy("web:buyer-202", secondListing.ListingId, "short"));
+        Reject(() => mutations.List("web:seller-101", otherListAsset.AssetId, 0, "list-operation-0004"));
 
         connection.Close();
         SqliteConnection.ClearAllPools();
