@@ -92,7 +92,7 @@ public sealed class MarketplaceReadApi(
     private object Listing(RestRequestArgs args)
     {
         if (!_active) return Disabled();
-        var listingId = (args.Parameters["listingId"] ?? string.Empty).Trim();
+        var listingId = (args.Verbs["listingId"] ?? string.Empty).Trim();
         if (listingId.Length is < 10 or > 64 || !listingId.StartsWith("ARK-LIST-", StringComparison.Ordinal))
             return new RestObject("400") { Error = "Invalid listing ID." };
 
@@ -108,7 +108,7 @@ public sealed class MarketplaceReadApi(
     private object Me(RestRequestArgs args)
     {
         if (!_active) return Disabled();
-        var subject = (args.Parameters["subject"] ?? string.Empty).Trim();
+        var subject = (args.Verbs["subject"] ?? string.Empty).Trim();
         var link = db.GetWebAccountLinkBySubject(subject);
         if (link is null)
             return new RestObject("404") { Error = "No linked Terraria account was found." };
@@ -130,9 +130,9 @@ public sealed class MarketplaceReadApi(
         if (!_active) return Disabled();
         try
         {
-            var account = args.Parameters["account"] ?? string.Empty;
-            var code = args.Parameters["code"] ?? string.Empty;
-            var subject = args.Parameters["subject"] ?? string.Empty;
+            var account = args.Verbs["account"] ?? string.Empty;
+            var code = args.Verbs["code"] ?? string.Empty;
+            var subject = args.Verbs["subject"] ?? string.Empty;
             var link = links.Redeem(account, code, subject);
             var result = new RestObject();
             result["linkId"] = link.LinkId;
