@@ -1,3 +1,21 @@
+# 1.5.0-rc.1
+
+- Add the production Arkovia Marketplace web application with secure linked Terraria accounts.
+- Change marketplace link codes to six digits with a five-minute lifetime and bounded failed attempts.
+- Fix TShock REST route-value binding for marketplace linking, account views and mutations.
+- Add live online Terraria inventory viewing from the marketplace website.
+- Add website item listing by inventory slot, quantity and total ARKOS price, with server-side revalidation and item escrow.
+- Add purchased/returned item claiming to Terraria through the website and `/claimitems`.
+- Add player marketplace profiles showing live inventory, transferable assets, listings, purchase history and stock holdings.
+- Add stock quote/holding storage, primary share purchases, `/stocks`/`/stock` portfolio commands and administrator stock creation/price commands.
+- Add the scrolling clickable ARKOVIA EXCHANGE stock marquee to the marketplace website.
+- Add towns, membership, town treasury, region/property claims, governance and town-property marketplace settlement.
+- Add generic marketplace assets, reservation escrow, idempotent web mutations and atomic supported-asset settlement.
+- Restore `/market` as a redirect to `/marketplace` in the production Nginx deployment template.
+- Expand regression coverage to 349 main checks plus settlement/security and web smoke tests.
+
+> Stock trading in this release is a primary-offering foundation. A full player-to-player secondary order book with bid/ask matching, locked shares/funds and price-time priority remains planned.
+
 # 1.4.0-rc.2
 
 - Send TServerWeb's required `TServerWeb Vote Plugin` client identifier for vote and CAPTCHA requests.
@@ -94,17 +112,9 @@ All notable changes to Arkovia Economy are documented here.
 
 ### In Development / Not Yet Enabled
 
-- Blockchain deposits into the gameplay economy.
-- Blockchain withdrawals from the gameplay economy.
-- Outgoing ARKOS transaction signing.
-- Transaction-fee quoting for outgoing payments.
-- Automatic starter-wallet ARKOS grants.
-- Player security PIN authorization.
 - Contribution-based multiplayer boss reward pools.
-- Completed DD2 event reward settlement.
-- Additional invasion and world-event reward pools.
-
-> DD2 tracking infrastructure exists, but completion payout remains disabled pending a safe atomic multiplayer treasury settlement design.
+- Additional secondary stock-exchange matching behavior.
+- Rentals, companies/businesses and smart-region automation.
 
 ---
 
