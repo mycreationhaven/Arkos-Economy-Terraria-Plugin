@@ -19,6 +19,7 @@ public sealed partial class EconomyDatabase
             new SqlColumn("Status", MySqlDbType.VarChar, 32),
             new SqlColumn("Payload", MySqlDbType.Text)));
         EnsureAssetSchema();
+        EnsureTownSchema();
     }
 
     public EconomyOperation? GetOperation(string id)
@@ -48,16 +49,36 @@ public sealed partial class EconomyDatabase
 
 public sealed class SettlementUnit(IDbConnection connection, IDbTransaction transaction)
 {
-    public int Execute(string sql, params object[] values)
+    private IDbCommand Command(string sql, params object[] values)
     {
-        using var cmd = connection.CreateCommand();
-        cmd.Transaction = transaction; cmd.CommandText = sql;
+        var cmd = connection.CreateCommand();
+        cmd.Transaction = transaction;
+        cmd.CommandText = sql;
         for (var i = 0; i < values.Length; i++)
         {
-            var p = cmd.CreateParameter(); p.ParameterName = "@p" + i; p.Value = values[i]; cmd.Parameters.Add(p);
+            var p = cmd.CreateParameter();
+            p.ParameterName = "@p" + i;
+            p.Value = values[i];
+            cmd.Parameters.Add(p);
         }
+        return cmd;
+    }
+
+    public int Execute(string sql, params object[] values)
+    {
+        using var cmd = Command(sql, values);
         return cmd.ExecuteNonQuery();
     }
+
+    public long ScalarLong(string sql, params object[] values)
+    {
+        using var cmd = Command(sql, values);
+        var value = cmd.ExecuteScalar();
+        if (value is null || value is DBNull)
+            throw new InvalidOperationException("Expected database value was not found.");
+        return Convert.ToInt64(value);
+    }
+
     public void Insert(EconomyOperation op) => Execute(
         "INSERT INTO ArkoviaOperations (OperationId,Kind,UserId,Status,Payload) VALUES (@p0,@p1,@p2,@p3,@p4)",
         op.Id, op.Kind, op.UserId, op.Status, JsonConvert.SerializeObject(op));
