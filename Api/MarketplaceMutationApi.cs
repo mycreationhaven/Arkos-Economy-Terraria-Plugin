@@ -61,10 +61,10 @@ public sealed class MarketplaceMutationApi(
         if (!_active) return Disabled();
         try
         {
-            var subject = args.Parameters["subject"] ?? string.Empty;
-            var assetId = args.Parameters["assetId"] ?? string.Empty;
-            var operationKey = args.Parameters["operationKey"] ?? string.Empty;
-            if (!long.TryParse(args.Parameters["priceAtomic"], out var priceAtomic) || priceAtomic <= 0)
+            var subject = args.Verbs["subject"] ?? string.Empty;
+            var assetId = args.Verbs["assetId"] ?? string.Empty;
+            var operationKey = args.Verbs["operationKey"] ?? string.Empty;
+            if (!long.TryParse(args.Verbs["priceAtomic"], out var priceAtomic) || priceAtomic <= 0)
                 return new RestObject("400") { Error = "Invalid listing price." };
 
             var operation = mutations.List(subject, assetId, priceAtomic, operationKey);
@@ -93,9 +93,9 @@ public sealed class MarketplaceMutationApi(
         if (!_active) return Disabled();
         try
         {
-            var subject = args.Parameters["subject"] ?? string.Empty;
-            var listingId = args.Parameters["listingId"] ?? string.Empty;
-            var operationKey = args.Parameters["operationKey"] ?? string.Empty;
+            var subject = args.Verbs["subject"] ?? string.Empty;
+            var listingId = args.Verbs["listingId"] ?? string.Empty;
+            var operationKey = args.Verbs["operationKey"] ?? string.Empty;
             var operation = mutations.Buy(subject, listingId, operationKey);
             var sale = db.GetMarketplaceSaleByListing(listingId);
 
@@ -123,9 +123,9 @@ public sealed class MarketplaceMutationApi(
         if (!_active) return Disabled();
         try
         {
-            var subject = args.Parameters["subject"] ?? string.Empty;
-            var listingId = args.Parameters["listingId"] ?? string.Empty;
-            var operationKey = args.Parameters["operationKey"] ?? string.Empty;
+            var subject = args.Verbs["subject"] ?? string.Empty;
+            var listingId = args.Verbs["listingId"] ?? string.Empty;
+            var operationKey = args.Verbs["operationKey"] ?? string.Empty;
             var operation = mutations.Cancel(subject, listingId, operationKey);
 
             var result = new RestObject();
