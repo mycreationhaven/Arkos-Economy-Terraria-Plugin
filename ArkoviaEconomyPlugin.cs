@@ -21,6 +21,7 @@ public sealed class ArkoviaEconomyPlugin : TerrariaPlugin
     private EconomyDatabase? _database;
     private EconomyService? _economy;
     private TownService? _towns;
+    private MarketplaceService? _marketplace;
     private ArkoviaNodeClient? _node;
     private WalletClaimClient? _walletClaimClient;
     private ArkoviaFundingSynchronizer? _sync;
@@ -31,20 +32,11 @@ public sealed class ArkoviaEconomyPlugin : TerrariaPlugin
     private List<Command> _commands = new();
 
     public override string Name => "Arkovia Economy";
+    public override string Author => "My Creation Haven";
+    public override string Description => "Treasury-backed Arkovia economy framework for TShock/Terraria.";
+    public override Version Version => new(1, 4, 0);
 
-    public override string Author =>
-        "My Creation Haven";
-
-    public override string Description =>
-        "Treasury-backed Arkovia economy framework for TShock/Terraria.";
-
-    public override Version Version =>
-        new(1, 4, 0);
-
-    public ArkoviaEconomyPlugin(Main game)
-        : base(game)
-    {
-    }
+    public ArkoviaEconomyPlugin(Main game) : base(game) { }
 
     public override void Initialize()
     {
@@ -52,33 +44,22 @@ public sealed class ArkoviaEconomyPlugin : TerrariaPlugin
         EconomyLog.Initialize(_config.DirectoryPath);
         _config.Load();
 
-        _database =
-            new EconomyDatabase(TShock.DB);
-
+        _database = new EconomyDatabase(TShock.DB);
         _database.EnsureSchema();
 
         _node = new ArkoviaNodeClient(() => _config.Current);
-        // Validate before registering commands, rewards or funding synchronization.
         _node.ValidateCurrencyAsync(CancellationToken.None).GetAwaiter().GetResult();
         _database.BindCurrency(_config.Current);
 
-        _economy =
-            new EconomyService(
-                _database,
-                () => _config.Current);
-
+        _economy = new EconomyService(_database, () => _config.Current);
         _economy.GetTreasury();
         _towns = new TownService(_database, _economy);
+        _marketplace = new MarketplaceService(_database, _economy, () => _config.Current);
+        _marketplace.GetEscrowAccount();
+        _marketplace.CleanupExpiredReservations();
 
         _walletClaimClient = new WalletClaimClient();
-
-        _sync =
-            new ArkoviaFundingSynchronizer(
-                _node,
-                _database,
-                _economy,
-                () => _config.Current);
-
+        _sync = new ArkoviaFundingSynchronizer(_node, _database, _economy, () => _config.Current);
         _transfers = new BlockchainTransferService(_database, _economy, _node, () => _config.Current);
         _transfers.InitializeAsync(CancellationToken.None).GetAwaiter().GetResult();
         _portal = new SecurityPortal(_database, new TransactionPinService(_database), _transfers,
@@ -86,36 +67,20 @@ public sealed class ArkoviaEconomyPlugin : TerrariaPlugin
                 p is { Active: true, IsLoggedIn: true } && p.Account?.ID == userId && p.HasPermission(permission)));
         _portal.Start();
 
-        var handlers =
-            new EconomyCommands(
-                _economy,
-                _database,
-                _config,
-                _sync,
-                _node,
-                _walletClaimClient, _transfers, _portal);
+        var handlers = new EconomyCommands(_economy, _database, _config, _sync, _node,
+            _walletClaimClient, _transfers, _portal);
+        _commands = handlers.Build().ToList();
 
-        _commands =
-            handlers.Build().ToList();
-
-        var townCommands = new TownCommands(_towns, _database, _config);
-        _commands.AddRange(townCommands.Build());
+        _commands.AddRange(new TownCommands(_towns, _database, _config).Build());
+        _commands.AddRange(new MarketplaceCommands(_marketplace, _towns, _database, _config).Build());
 
         _voting = new VoteRewardsService(_database, _economy, () => _config.Current);
         _commands.AddRange(_voting.BuildCommands());
 
-        TShockAPI.Commands.ChatCommands.AddRange(
-            _commands);
+        TShockAPI.Commands.ChatCommands.AddRange(_commands);
+        ArkoviaEconomyApi.Instance = new ArkoviaEconomyApi(_economy);
 
-        ArkoviaEconomyApi.Instance =
-            new ArkoviaEconomyApi(_economy);
-
-        _gameplay =
-            new GameplayEconomyHandler(
-                this,
-                _economy,
-                () => _config.Current);
-
+        _gameplay = new GameplayEconomyHandler(this, _economy, () => _config.Current);
         _gameplay.Register();
 
         _progression = new ArkoviaEconomy.Progression.ProgressionHandler(this,
@@ -126,10 +91,7 @@ public sealed class ArkoviaEconomyPlugin : TerrariaPlugin
         _sync.Start();
         _transfers.Start();
 
-        ArkoviaEconomy.Core.EconomyLog.Info(
-            $"[ArkoviaEconomy] v{Version} initialized. " +
-            $"Treasury source: " +
-            $"{_config.Current.Arkovia.CommunityDevelopmentAccount}");
+        EconomyLog.Info($"[ArkoviaEconomy] v{Version} initialized. Treasury source: {_config.Current.Arkovia.CommunityDevelopmentAccount}");
     }
 
     protected override void Dispose(bool disposing)
@@ -137,11 +99,7 @@ public sealed class ArkoviaEconomyPlugin : TerrariaPlugin
         if (disposing)
         {
             foreach (var command in _commands)
-            {
-                TShockAPI.Commands.ChatCommands.Remove(
-                    command);
-            }
-
+                TShockAPI.Commands.ChatCommands.Remove(command);
             _commands.Clear();
 
             _progression?.Dispose();
@@ -151,10 +109,8 @@ public sealed class ArkoviaEconomyPlugin : TerrariaPlugin
             _sync?.Dispose();
             _node?.Dispose();
             _voting?.Dispose();
-
             ArkoviaEconomyApi.Instance = null;
         }
-
         base.Dispose(disposing);
     }
 }
