@@ -1,507 +1,305 @@
-# 🌎 Arkovia Economy for Terraria / TShock — v1.4.0-rc.2
+# 🌎 Arkovia Economy for Terraria / TShock
 
-> A treasury-backed Terraria economy with paid ranks, quests, jobs, gameplay rewards, banking, player blockchain wallets, and optional Arkovia blockchain integration.
+> A treasury-backed Terraria economy and player marketplace for TShock, with Wallet/Bank balances, towns and property, live web marketplace inventory selling, stock holdings, voting rewards, progression, and optional Arkovia blockchain integration.
 
-**Current source and included DLL: `v1.4.0-rc.2` (release candidate).** This version corrects TServerWeb client identification and includes configurable voting rewards for Terraria-Servers.com and TServerWeb. [Voting setup](docs/VOTING.md) · [Progression setup](docs/PROGRESSION.md) · [Commands](docs/COMMANDS.md) · [Changelog](CHANGELOG.md) · [Validation](VALIDATION.md).
+**Current release line: `v1.5.0-rc.1`**  
+**Plugin version reported by TShock: `1.5.0`**  
+**Live Arkovia marketplace:** `https://arkovia-node1.mywire.org/marketplace`  
+The shorter `/market` URL redirects to the same marketplace.
 
-**Arkovia Economy** is an open-source economy plugin for Terraria servers running TShock.
+Arkovia Economy is an open-source TShock plugin for Terraria. It keeps fast gameplay transactions in an internal integer ledger while allowing selected workflows—wallet creation, deposits/withdrawals, marketplace settlement, towns, property, and future company systems—to connect safely to the broader Arkovia platform.
 
-It combines a fast **off-chain gameplay economy** with optional **real Arkovia blockchain accounts**.
+The project is intentionally server-authoritative. Browsers are never trusted to decide balances, ownership, inventory contents, prices already committed to an order, permissions, or settlement completion.
 
-Players can earn currency while playing Terraria, maintain Wallet and Bank balances, transfer funds, view transaction history, create an Arkovia blockchain wallet, securely recover it, and check its real on-chain balance.
+## What v1.5 adds
 
-Server operators can use the native **ARKOS** currency or customize the economy presentation for their own Arkovia-based project.
+Version 1.5 expands the plugin from a gameplay economy into a broader server platform:
+
+- live website marketplace with linked Terraria accounts;
+- six-digit `/market link` codes that expire after five minutes;
+- live in-game inventory visibility on the website while the player is online;
+- selecting an inventory slot, quantity, and total ARKOS price from the website;
+- removal of listed items from the live Terraria inventory into marketplace escrow;
+- purchased/returned item claiming back into Terraria;
+- player marketplace profiles with sellable assets, listings, purchases, inventory, and stock holdings;
+- a public scrolling stock marquee on the marketplace;
+- clickable stock details and website stock purchases;
+- `/stocks` and `/stock` commands for market and portfolio views;
+- town creation, membership, treasury, claims, governance, property, and town-property marketplace support;
+- secure website mutations with linked identity, CSRF protection, rate limiting, and idempotency keys;
+- atomic marketplace escrow and settlement for supported transferable assets;
+- restored `/market` → `/marketplace` web alias;
+- corrected TShock REST route binding for marketplace account linking and mutations.
+
+The stock module in this release is a **primary-offering foundation**. It supports issued shares, current prices, available shares, holdings, and purchases from the issuer. A full player-to-player order book with bids, asks, price-time priority, and secondary trading remains a later phase.
 
 ---
 
-## ✨ Feature Status
+## Feature status
 
-| Feature | Status |
+| Area | Status |
 |---|---|
-| Dedicated rotating plugin log files | ✅ Available |
-| Paid ranks 1–100, death demotion, permission perks and items | ✅ Implemented — staging validation |
-| Configurable NPC quests and jobs | ✅ Implemented — staging validation |
-| TShock account-based economy | ✅ Available |
-| 8-decimal atomic accounting | ✅ Available |
-| Player Wallet balance | ✅ Available |
-| Protected Bank balance | ✅ Available |
-| Player-to-player payments | ✅ Available |
-| Transaction history | ✅ Available |
-| Treasury-backed rewards | ✅ Available |
-| NPC kill rewards | ✅ Available |
-| Initial boss reward classification | ✅ Available |
-| Death penalties | ✅ Available |
-| PvP economic rewards/losses | ✅ Available |
-| Floating green/red currency text | ✅ Available |
-| Arkovia treasury synchronization | ✅ Available |
-| Player-created Arkovia wallets | ✅ Available |
-| Secure wallet recovery workflow | ✅ Available |
-| On-chain wallet balance lookup | ✅ Available |
-| DD2 / Old Ones Army tracking | ✅ Implemented — staging validation |
-| DD2 multiplayer reward payout | ✅ Implemented — staging validation |
-| Blockchain deposits | ✅ Implemented — configuration required |
-| Blockchain withdrawals | ✅ Implemented — configuration required |
-| Automatic starter blockchain grant | ✅ Implemented — configuration required |
-| ARKOS transaction PIN | ✅ Implemented — configuration required |
-| Additional Terraria event rewards | ✅ Implemented — staging validation |
-| Terraria-Servers.com and TServerWeb vote rewards | ✅ Implemented — provider staging required |
+| TShock account-backed economy | ✅ Production foundation |
+| Integer/atomic Wallet + Bank accounting | ✅ |
+| Atomic settlement + immutable ledger | ✅ |
+| Player payments | ✅ |
+| Treasury-backed gameplay rewards | ✅ |
+| NPC rewards, death penalties, PvP economy | ✅ |
+| Paid ranks, quests, jobs | ✅ |
+| Vote rewards | ✅ |
+| Player-created Arkovia wallets | ✅ |
+| Blockchain deposits/withdrawals | ✅ Available when configured |
+| Transaction PIN + secure portal | ✅ Available when configured |
+| Towns and membership | ✅ |
+| Town treasury | ✅ |
+| TShock region/property claims | ✅ |
+| Town governance | ✅ |
+| Town-property marketplace settlement | ✅ |
+| Website account linking | ✅ |
+| Website player profile | ✅ |
+| Live online inventory view | ✅ |
+| Website inventory-item listing | ✅ |
+| Item escrow + claim delivery | ✅ Initial release |
+| Generic asset marketplace | ✅ |
+| Stock quotes + holdings | ✅ Initial release |
+| Website stock marquee | ✅ |
+| Primary stock purchases | ✅ |
+| Secondary stock order book | 🚧 Planned |
+| Rentals | 🚧 Planned |
+| Companies/businesses | 🚧 Planned |
+| Smart-region automation | 🚧 Planned |
+| Optional crossplay integration | 🚧 Planned |
 
 ---
 
-## Fixed in v1.4.0-rc.2
-
-TServerWeb vote and CAPTCHA requests now send the exact game-plugin client identifier required by TServerWeb. TServerWeb needs only the numeric server ID; leave its `ApiKey` value blank.
-
-## New in v1.4.0-rc.1
-
-Players can now use `/vote` to view voting links, claim verified votes, check daily status, and complete the TServerWeb CAPTCHA flow. Server owners can independently configure provider links, ARKOS or custom-currency rewards, item rewards, temporary TShock group rewards, per-provider daily claims, and a combined daily cap.
-
-Vote claims require an authenticated TShock account and are stored persistently to prevent duplicate rewards after restarts. Providers remain disabled until the server owner configures them. See the complete [Voting Rewards Setup Guide](docs/VOTING.md).
-
-The compiled `release/ArkoviaEconomy.dll` targets TShock 6.1.0 on .NET 9. The corrected `v1.4.0-rc.2` DLL is documented in the compiled-release section below.
-
-## New in v1.3.2-rc.1
-
-`/arkos security`, `/arkos pin` and `/arkos withdraw` now display the normal portal address plus a **six-digit, one-time access code**. Open the address and enter your TShock account name and the code. Long authentication links are no longer displayed. Codes expire after `SessionMinutes`, allow at most five wrong guesses and are limited to 60 redemption attempts across the server per minute. New codes invalidate earlier codes and browser sessions for the same account. Your saved transaction PIN remains unchanged. `/arkos transfers` now explains when there are no records.
-
-## Fixed in v1.3.1-rc.1
-
-Fixes startup/reload failure after saving a full progression configuration. Saved rank, quest and job lists now replace built-in defaults instead of being appended to them. Existing custom definitions and empty quest/job lists are preserved; no config regeneration or database changes are required. Install the corrected DLL and restart TShock.
-
-## New in v1.3.0-rc.1
-
-Plugin logs now go to `tshock/ArkoviaEconomy/logs/`, with daily/size rotation and 14-day retention. See [logging](docs/LOGGING.md).
-
-`/rank` and `/rank up` provide a configurable 100-level ladder with increasing wallet costs, XP and combat-active time requirements. Death demotes one level, both changes broadcast, earned permissions follow the current level, and rank items are awarded once. Rank 100 grants admin permissions and requires owner approval by default. `/quests` and `/jobs` offer configurable NPC objectives, daily quotas and atomic treasury-funded rewards. See [progression setup, commands, defaults and limitations](docs/PROGRESSION.md).
-
-## 🎮 Two Economies Working Together
-
-Arkovia Economy deliberately separates rapid Terraria gameplay transactions from blockchain transactions.
+# Architecture
 
 ```text
-Terraria gameplay
-       │
-       ▼
-Off-chain economy ledger
-       │
-       ├── Player Wallet
-       └── Player Bank
-
-Arkovia blockchain
-       │
-       ▼
-Player Arkovia Wallet
-       │
-       └── Real on-chain balance
+Terraria / TShock
+  ├─ player identity
+  ├─ live inventory
+  ├─ regions / world ownership
+  └─ permissions
+          │
+          ▼
+Arkovia Economy Plugin
+  ├─ Wallet / Bank ledger
+  ├─ towns / property
+  ├─ marketplace assets
+  ├─ item escrow
+  ├─ stock holdings
+  └─ secure TShock REST routes
+          │
+          ▼
+Arkovia Marketplace Web Service
+  ├─ HTTPS browser sessions
+  ├─ CSRF protection
+  ├─ rate limiting
+  ├─ account-link sessions
+  └─ server-side TShock REST token
+          │
+          ▼
+Browser
 ```
 
-Killing an enemy does **not** create a blockchain transaction.
+The browser does **not** receive the TShock REST token and does not connect directly to the TShock database.
 
-Frequent gameplay activity remains in the fast internal economy ledger. Blockchain operations are reserved for actions that actually require the Arkovia network.
+## Core authority rules
+
+1. TShock is authoritative for the logged-in Terraria identity, live character inventory, permissions, and world/region state.
+2. The Arkovia plugin/backend is authoritative for balances, marketplace records, escrow, ownership, shares, and settlement state.
+3. The browser can request an action, but it cannot declare that an action succeeded.
+4. Ownership is not transferred until settlement succeeds.
+5. All supported monetary movements are recorded through the economy ledger.
+6. External mutations require linked identity, authorization, CSRF/session protection where applicable, idempotency, and auditability.
 
 ---
 
-## 💰 Wallet vs Bank vs Blockchain Wallet
+# Marketplace
 
-Arkovia Economy uses three distinct financial concepts.
-
-### Gameplay Wallet
-
-The gameplay Wallet contains spendable off-chain currency inside Terraria.
-
-It can be used for player payments, gameplay systems, fees, PvP, shops, services, and other in-game activity.
-
-Normal gameplay losses are taken from this balance.
-
-### Gameplay Bank
-
-The Bank is protected off-chain savings inside Terraria.
-
-Players can move funds between Wallet and Bank with:
+The production marketplace is served at:
 
 ```text
+https://arkovia-node1.mywire.org/marketplace
+```
+
+`https://arkovia-node1.mywire.org/market` redirects there for convenience.
+
+## Link a Terraria account
+
+In Terraria:
+
+```text
+/market link
+```
+
+The plugin returns a cryptographically generated **six-digit, single-use code**. The code expires after **five minutes** and allows at most five failed guesses.
+
+Enter the Terraria account name and code on the marketplace. The website derives a stable opaque subject from the normalized account name using a server-side HMAC secret and keeps the TShock REST credential entirely server-side.
+
+## Player profile
+
+After linking, the marketplace profile can show:
+
+- linked Terraria account;
+- live online inventory;
+- stock holdings and current market value;
+- other transferable assets;
+- active and historical marketplace listings;
+- purchase history;
+- items waiting to be claimed back into Terraria.
+
+## Sell directly from Terraria inventory
+
+The player must currently be online so the website can read the authoritative live character inventory.
+
+Flow:
+
+```text
+1. Link the account on the marketplace.
+2. Stay logged into Terraria.
+3. Open the In-game inventory section on the website.
+4. Choose an item.
+5. Choose the quantity.
+6. Enter the total ARKOS listing price.
+7. Confirm the listing.
+8. The server verifies the slot and stack again.
+9. The item quantity is removed from Terraria and represented in marketplace escrow.
+10. The listing becomes available for purchase.
+```
+
+Favorited items cannot be listed until they are unfavorited in Terraria.
+
+The website never trusts a browser-provided item name or item ID as proof of ownership. The listing route resolves the linked TShock account, reads the live slot again, checks the stack and favorite state, creates an item-backed asset/escrow record, and then creates the marketplace listing.
+
+## Claim purchased or returned items
+
+Players can use the website **Claim to Terraria** action while online or run:
+
+```text
+/claimitems
+```
+
+Claimable item assets are delivered to the linked Terraria account and then marked consumed/delivered by the marketplace system.
+
+## Generic marketplace assets
+
+The marketplace also supports stable IDs in the form:
+
+```text
+ARK-ASSET-<GUID>
+```
+
+Supported asset workflows include ordinary player assets and town-backed property. Property settlement additionally updates the associated TShock region ownership/ACL state.
+
+Marketplace settlement uses explicit listing, reservation, escrow, completion, cancellation, expiry, and sale records. Browser values alone never finalize a transaction.
+
+---
+
+# Stocks / Arkovia Exchange
+
+The marketplace includes an **ARKOVIA EXCHANGE** scrolling marquee. Each stock is clickable and displays its ticker, current price, and available shares.
+
+Linked players can buy available primary-offering shares from the website and see their holdings on their profile.
+
+In Terraria:
+
+```text
+/stocks
+/stocks market
+/stocks mine
+/stocks portfolio
+/stocks buy <ticker> <shares>
+```
+
+Alias:
+
+```text
+/stock
+```
+
+Administrator stock setup:
+
+```text
+/stockadmin create <ticker> <name> <price> <shares>
+/stockadmin price <ticker> <price>
+```
+
+A purchase atomically:
+
+- verifies the current stock quote and available shares;
+- verifies the buyer Wallet balance;
+- debits the buyer Wallet;
+- credits the issuer economy account;
+- reduces available shares;
+- increases the buyer holding;
+- writes an economy ledger row.
+
+### Current limitation
+
+This is not yet a full exchange matching engine. Shareholders cannot yet place their own bid/ask orders or sell holdings to one another through an order book. That phase will add locked shares/funds, price-time priority, self-trade protections, and atomic secondary settlement.
+
+---
+
+# Towns and property
+
+Towns use stable town/asset records plus TShock regions.
+
+Common commands:
+
+```text
+/town create <name>
+/town info
+/town invite <player>
+/town accept <town>
+/town leave
+/town balance
+/town deposit <amount>
+/town withdraw <amount>
+/town claim <region>
+/town unclaim <region>
+/town promote <player>
+/town demote <player>
+/town kick <player>
+/town transfer <player>
+/property info
+```
+
+Marketplace property commands include:
+
+```text
+/market listings
+/market info <listingId>
+/market sellproperty <region> <price>
+/market buy <listingId>
+/market cancel <listingId>
+```
+
+Town-property sale settlement updates the economy escrow, seller town treasury, configured marketplace tax, property record, asset owner, transfer audit, marketplace sale, and TShock region ownership as one guarded workflow.
+
+---
+
+# Economy model
+
+Arkovia Economy separates three concepts.
+
+## Gameplay Wallet
+
+Spendable internal currency used for payments, marketplace purchases, fees, rewards, stock purchases, and other gameplay systems.
+
+## Gameplay Bank
+
+Protected internal savings. Normal death/PvP losses do not drain the Bank.
+
+```text
+/bank balance
 /bank deposit <amount>
 /bank withdraw <amount>
 ```
 
-These commands do **not** move blockchain funds. They only move internal Terraria economy balances.
+## Arkovia blockchain wallet
 
-Normal death and PvP penalties do not drain the protected Bank balance.
-
-### Arkovia Blockchain Wallet
-
-The blockchain wallet is a real Arkovia account linked to the authenticated TShock user.
-
-It has a public Arkovia address, account ID, public key, and private recovery secret.
-
-The blockchain wallet is separate from the gameplay Wallet and Bank.
-
----
-
-## ⚛️ Atomic Currency Accounting
-
-Arkovia Economy stores balances using integer atomic units.
-
-For native ARKOS:
-
-```text
-1 ARKOS = 100,000,000 atomic units
-```
-
-That provides eight decimal places of precision:
-
-```text
-0.00000001 ARKOS
-```
-
-Example:
-
-```text
-0.00044127 ARKOS = 44,127 atomic units
-```
-
-Using integer atomic units avoids storing economy balances as floating-point values.
-
----
-
-## 🐲 Gameplay Rewards
-
-Arkovia Economy can reward authenticated players for defeating eligible hostile Terraria NPCs.
-
-Current reward categories include:
-
-- Common Enemy
-- Strong / Rare Enemy
-- Early Boss
-- Mid-Game Boss
-- End-Game Boss
-- Quest reward range for future integrations
-
-Friendly NPCs and town NPCs are excluded.
-
-Obvious statue-spawn farming is also rejected.
-
-Boss classification currently uses an initial max-health based system. Explicit boss progression tiers and contribution-based multiplayer boss payouts are planned improvements.
-
-Gameplay rewards are treasury-backed when treasury solvency enforcement is enabled.
-
-If the treasury cannot fund a reward, the plugin fails closed instead of silently minting unsupported gameplay currency.
-
----
-
-## 💚 Native Floating Currency Feedback
-
-Currency changes can also appear above the player using Terrarias native combat-text networking.
-
-Example gain:
-
-```text
-+0.00044127
-```
-
-Example loss:
-
-```text
--0.00500000
-```
-
-Positive changes are shown in green and negative changes in red.
-
-The floating display intentionally shows the signed number only. The normal chat message explains the reason and includes the configured currency symbol.
-
-Example:
-
-```text
-You earned 0.00044127 ARKOS for killing Maggot Zombie.
-```
-
-No client-side Terraria mod is required for this native floating-text feedback.
-
----
-
-## ☠️ Death Economy
-
-Normal Terraria deaths deduct a configurable percentage of the gameplay Wallet (`GameplayEconomy.Death.PenaltyPercent`, default **25%**). Losses round down to whole atomic units and respect the protected minimum.
-
-Important rules:
-
-- Bank funds remain protected.
-- Players cannot go below zero.
-- The actual loss is clamped to the available Wallet balance.
-- A configurable cooldown prevents repeated rapid penalties.
-- Normal death deductions return funds to the internal treasury.
-
-Example:
-
-```text
-Wallet before death: 100 ARKOS
-Bank:                 50 ARKOS
-Configured penalty:   25%
-
-Actual loss:          25 ARKOS (credited to Terraria Treasury)
-Wallet after death:   75 ARKOS
-Bank after death:     50 ARKOS
-```
-
----
-
-## ⚔️ PvP Economy
-
-PvP can use a separate configurable economic penalty.
-
-The victim can lose only what is available in the gameplay Wallet.
-
-The actual amount collected can be split between the winning player and the treasury.
-
-This creates meaningful competitive rewards without touching protected Bank funds or the players blockchain wallet.
-
-When PvP attribution is unavailable or invalid, the economy fails closed and no currency is moved.
-
----
-
-## 🏦 Treasury-Backed Economy
-
-One of the core design goals of Arkovia Economy is to avoid uncontrolled currency creation.
-
-Gameplay rewards can be paid from the internal Terraria Treasury.
-
-When treasury solvency enforcement is enabled, a reward is issued only when the treasury can fund it.
-
-```text
-Terraria Treasury
-       │
-       ▼
-Gameplay rewards
-       │
-       ▼
-Players
-       │
-       ├── server fees
-       ├── services
-       ├── death penalties
-       └── other economy sinks
-               │
-               ▼
-            Treasury
-```
-
-This allows server operators to build an economy around identifiable sources and sinks instead of treating every reward as unlimited money creation.
-
----
-
-## ⛓️ Arkovia Blockchain Integration
-
-Arkovia Economy can connect to an Arkovia blockchain node through the Arkovia HTTP API.
-
-Example local node endpoint:
-
-```text
-http://127.0.0.1:4876/nxt
-```
-
-Using a private or localhost node endpoint is strongly recommended whenever the Terraria server and blockchain node are on the same trusted machine.
-
-The plugin can monitor the configured Community & Development account for confirmed blockchain funding events and allocate an operator-configured percentage to the Terraria Treasury.
-
----
-
-## 🧱 Arkovia Fee Distribution
-
-The Arkovia blockchain implementation used by this project distributes eligible block fees as:
-
-```text
-80% -> Block Forger
-15% -> Network Treasury
- 5% -> Community & Development
-```
-
-The projects default Community & Development account is:
-
-```text
-ARK-KVFL-C6EE-2UD2-CSJ8Q
-```
-
-The Community & Development credit is an internal blockchain ledger event rather than an ordinary payment transaction.
-
-For this reason, the treasury synchronizer monitors:
-
-```text
-requestType=getAccountLedger
-eventType=BLOCK_GENERATED
-```
-
-rather than relying only on ordinary blockchain payment transactions.
-
-The synchronizer also checks blockchain height so the configured confirmation requirement can be enforced.
-
-Confirmed funding events receive duplicate protection before being credited to the Terraria Treasury.
-
----
-
-## 👛 Player Arkovia Blockchain Wallets
-
-Authenticated Terraria players can create their own Arkovia blockchain wallet from inside the game.
-
-```text
-/arkos wallet create
-```
-
-The plugin generates an Arkovia account and associates its public identity with the players stable TShock account ID.
-
-The public wallet record can contain:
-
-- TShock User ID
-- Arkovia account ID
-- Arkovia address
-- public key
-- creation timestamp
-
-The private recovery secret is deliberately treated differently from ordinary gameplay data.
-
----
-
-## 🔐 Wallet Recovery Security
-
-An Arkovia recovery secret can control the associated blockchain wallet.
-
-Anyone who obtains that secret may be able to control the account.
-
-> **Never paste an Arkovia recovery secret or private key into Terraria chat or an ordinary TShock command.**
-
-Terraria commands and server activity may be logged, so normal chat is not an appropriate secret-entry channel.
-
-During wallet creation, recovery material is written through the protected recovery workflow rather than being stored as a normal economy database field.
-
-The recovery material must be protected by appropriate filesystem permissions and deployment security.
-
-The plugin must never log the recovery secret or wallet-claim API credential.
-
-If secure claim creation fails after the blockchain wallet has already been created, the recovery workflow is designed to retain the protected recovery artifact rather than silently destroy the players ability to recover the wallet.
-
-Server operators should review `SECURITY.md` and `docs/SECURITY.md` before enabling wallet creation on a public server.
-
----
-
-## 🌐 Optional Secure Recovery Claim Service
-
-The current wallet workflow supports integration with a separate local recovery-claim service.
-
-The plugin-side integration communicates with the service through localhost:
-
-```text
-127.0.0.1:4890
-```
-
-This service is deployment infrastructure and is separate from the normal Terraria economy database.
-
-Its internal API credential must remain private and must never be committed to this repository.
-
-Production deployments should additionally protect recovery endpoints with appropriate transport security, filesystem permissions, expiration, rate limiting, and service isolation.
-
----
-
-## 📊 Real On-Chain Balance Lookup
-
-Players who have created an Arkovia wallet can query its actual blockchain balance:
-
-```text
-/arkos balance
-```
-
-The plugin queries the configured Arkovia node using the players linked public account.
-
-Example response:
-
-```text
-On-chain balance: 143.00000000 ARKOS
-Wallet: ARK-....
-```
-
-The on-chain balance is separate from the Terraria gameplay Wallet and Bank.
-
-Checking a blockchain balance requires only the public account. It does not require the players secret phrase or private key.
-
----
-
-## 🔄 What Is On-Chain Today?
-
-The current plugin should not be interpreted as moving every gameplay transaction onto the blockchain.
-
-### Available now
-
-- Arkovia node connectivity
-- confirmed treasury funding synchronization
-- player blockchain wallet creation
-- public wallet association with TShock accounts
-- secure recovery workflow integration
-- on-chain balance lookup
-
-### Blockchain features included in v1.3.0-rc.1 (introduced in 1.2.0)
-
-Confirmed blockchain deposits, PIN-authorized withdrawals, fee review, a separate local signing service, and optional one-time starter grants are implemented. These features are disabled until configured; installing the DLL alone does not enable reserve spending.
-
-Start with [blockchain and PIN setup](docs/BLOCKCHAIN_SETUP.md). The release includes `release/ArkoviaSigner.zip` alongside the updated plugin DLL. Network fees are paid by the operator's reserve. Existing Wallet and Bank amounts are preserved.
-
----
-
-## 🎮 Player Commands
-
-### Vote rewards
-
-Authenticated players with `arkoviaeconomy.vote` can use `/vote links`, `/vote claim [provider]`,
-`/vote status`, and `/vote tserverweb [captcha-answer]`. Server owners can independently configure
-treasury-backed currency, item and temporary TShock group rewards for each provider. See
-[`docs/VOTING.md`](docs/VOTING.md).
-
-Players must be authenticated to a TShock account before using financial commands.
-
-The economy identity is the stable **TShock User ID**, not merely the Terraria character name.
-
-### Gameplay Economy Commands
-
-| Command | Permission | Description |
-|---|---|---|
-| `/balance` | `arkoviaeconomy.use` | Show Wallet, Bank, and combined gameplay balance |
-| `/bal` | `arkoviaeconomy.use` | Alias for `/balance` |
-| `/money` | `arkoviaeconomy.use` | Alias for `/balance` |
-| `/pay <account> <amount>` | `arkoviaeconomy.pay` | Transfer gameplay currency to another authenticated TShock account |
-| `/bank balance` | `arkoviaeconomy.bank` | Show Wallet and Bank balances |
-| `/bank deposit <amount>` | `arkoviaeconomy.bank` | Move gameplay funds from Wallet to Bank |
-| `/bank withdraw <amount>` | `arkoviaeconomy.bank` | Move gameplay funds from Bank to Wallet |
-| `/econhistory [count]` | `arkoviaeconomy.use` | Show recent economy ledger entries |
-| `/treasury` | `arkoviaeconomy.treasury.view` | Show treasury balance and synchronization information |
-
-`/bank deposit` and `/bank withdraw` are internal Terraria economy operations. They are **not blockchain deposits or withdrawals**.
-
-Authorized administrators with audit permission may also inspect another TShock accounts balance using the supported administrative balance lookup.
-
----
-
-## 🏆 Rank, Quest and Job Commands
-
-| Command | Permission | Description |
-|---|---|---|
-| `/rank` | `arkoviaeconomy.rank` | Show current level, XP, combat-active minutes and next-rank requirements |
-| `/rank up` or `/rankup` | `arkoviaeconomy.rank` | Purchase the next rank after meeting its requirements and cooldown |
-| `/rank claim` | `arkoviaeconomy.rank` | Claim pending one-time rank item rewards while alive |
-| `/quest` or `/quests` | `arkoviaeconomy.quests` | List quests and objective counts |
-| `/quest accept <id>` | `arkoviaeconomy.quests` | Select one quest |
-| `/quest claim` or `/quest leave` | `arkoviaeconomy.quests` | Claim a completed quest or stop tracking it |
-| `/job` or `/jobs` | `arkoviaeconomy.jobs` | List jobs and objective counts |
-| `/job join <id>` | `arkoviaeconomy.jobs` | Select one job |
-| `/job claim` or `/job leave` | `arkoviaeconomy.jobs` | Collect completed work rewards or leave the job |
-
-Ranks 1–100 use configurable wallet costs, cumulative XP and combat-active minutes. The default cooldown is 12 hours after promotion or demotion. Each accepted death, including PvP, demotes one level with level 1 as the floor; rank changes broadcast serverwide. Existing death currency penalties and the separate PvP split still apply. Rank fees go to Terraria Treasury; Bank balances are protected.
-
-Permissions are cumulative up to the current rank and lost-rank perks are removed on demotion without replacing base TShock groups. Rank 100 grants admin permissions and requires owner approval by default. Item rewards are granted only on the first purchase of a level, preventing repeated rewards after demotion. Items already delivered are not confiscated.
-
-One selected quest and one job can progress together. This release supports configurable **NPC-kill objectives**, persistent progress, daily quotas and treasury-funded currency/XP claims. Mining, fishing and crafting objectives remain future work. See [configuration, defaults and delivery limitations](docs/PROGRESSION.md).
-
----
-
-## ⛓️ Player Blockchain Commands
-
-All `/arkos` commands require a logged-in TShock account and `arkoviaeconomy.wallet`. The wallet belongs to that TShock account, not the character name. Additional permissions are listed below.
+A real Arkovia account linked to the stable TShock user ID. This is separate from the gameplay Wallet and Bank.
 
 ```text
 /arkos balance
@@ -509,127 +307,144 @@ All `/arkos` commands require a logged-in TShock account and `arkoviaeconomy.wal
 /arkos wallet address
 /arkos wallet status
 /arkos wallet recovery
-/arkos deposit [transaction-full-hash]
+```
+
+Never type an Arkovia recovery phrase, private key, or transaction PIN into Terraria chat.
+
+---
+
+# Atomic accounting
+
+Internal balances are integer atomic units rather than floating point.
+
+For native ARKOS:
+
+```text
+1 ARKOS = 100,000,000 atomic units
+```
+
+The settlement layer uses optimistic before-value checks and SQL transactions so concurrent balance changes abort instead of silently creating partial transfers.
+
+Marketplace and stock monetary operations are designed around the same integer ledger model.
+
+---
+
+# Gameplay economy
+
+The plugin includes:
+
+- configurable NPC rewards;
+- treasury solvency enforcement;
+- normal death Wallet deductions;
+- protected Bank balances;
+- PvP redistribution;
+- floating positive/negative Terraria combat text;
+- configurable event pools;
+- progression ranks, quests, and jobs.
+
+Frequent gameplay transactions remain off-chain. Killing an NPC does not create an Arkovia blockchain transaction.
+
+---
+
+# Voting rewards
+
+The plugin avoids TShock's built-in `/vote` poll command collision by using:
+
+```text
+/arkvote links
+/arkvote claim [provider]
+/arkvote status
+/arkvote debug
+/arkvote tserverweb [captcha-answer]
+```
+
+Alias:
+
+```text
+/voterewards
+```
+
+Supported integrations include Terraria-Servers.com and TServerWeb, with configurable treasury-backed currency, item, and temporary-group rewards.
+
+See [`docs/VOTING.md`](docs/VOTING.md).
+
+---
+
+# Blockchain settlement
+
+Configured deployments can support:
+
+```text
+/arkos deposit
+/arkos deposit <fullHash>
 /arkos security
 /arkos pin
 /arkos withdraw
 /arkos transfers
 ```
 
-These commands use the server's configured currency: native ARKOS when `CurrencyId` is blank, or the configured custom Arkovia currency. `/balance` shows your **off-chain gameplay Wallet and Bank**; `/arkos balance` shows your **linked blockchain account's balance**.
+The signing service is intentionally separate from the TShock plugin. Private signing credentials and API keys must remain in protected server-side environment/configuration storage and must never be committed.
 
-### `/arkos balance`
-
-Queries the Arkovia node for the selected currency balance of your linked blockchain wallet and displays its public address. This is a balance lookup: it does not deposit, withdraw or change your gameplay balance. Create a linked wallet first with `/arkos wallet create`. A reachable configured node is required.
-
-### `/arkos wallet create`
-
-Creates a new Arkovia blockchain wallet and links its public address, account ID and public key to your TShock account. An existing linked wallet is not replaced. This command does not import an external wallet or transfer your gameplay Wallet/Bank funds.
-
-The private recovery material is handled through the protected recovery workflow. If the recovery service is available, creation provides a secure recovery claim; if it is unavailable, the protected recovery file is retained for later recovery. Follow the claim instructions and keep your recovered secret private.
-
-A starter blockchain grant is optional: it is queued only when the server has enabled/configured starter grants and you have `arkoviaeconomy.blockchain.starter` at creation. Creating a wallet does not guarantee immediate funding.
-
-### `/arkos wallet address`
-
-Displays your linked wallet's public `ARK-...` address and numeric account ID. These identify your blockchain account; they are not private keys. Use this to check the linked account before transferring funds. For a gameplay deposit, the destination is the **server reserve shown by `/arkos deposit`**, not your own address.
-
-### `/arkos wallet status`
-
-Reports whether your linked wallet has been created. For an existing wallet, it also shows the public address, numeric account ID and creation time. It does not query your blockchain balance or show transaction confirmations; use `/arkos balance` and `/arkos transfers` for those respective views.
-
-### `/arkos wallet recovery`
-
-Requests a new secure recovery claim for an existing linked wallet using an available, unclaimed protected recovery package. Use this when the original claim was unavailable or you need a new claim while the package still exists.
-
-This requires the server's recovery infrastructure. If the package has already been claimed or is no longer available, the command cannot recreate your recovery secret. It does not reset a forgotten transaction PIN. Never type your wallet secret phrase or private key into Terraria chat.
-
-### `/arkos deposit [transaction-full-hash]`
-
-**Additional permission:** `arkoviaeconomy.blockchain.deposit`. The operator must enable and configure blockchain transfers before you send funds.
-
-With no argument, `/arkos deposit` displays the configured server reserve and deposit instructions. It does not send a transaction or credit money by itself.
-
-To deposit:
-
-1. Run `/arkos deposit` and confirm that the administrator has enabled deposits and configured the displayed reserve.
-2. In your Arkovia wallet application, send the server's selected currency **from your linked blockchain account to that reserve account**.
-3. Wait for the server's required confirmation depth, then copy the transaction's full hash (64 hexadecimal characters, not its numeric transaction ID).
-4. Run `/arkos deposit <transaction-full-hash>`, replacing the placeholder with that hash. Do not type the brackets.
-5. On successful verification, the amount is credited to your off-chain gameplay **Wallet**. Check it with `/balance`.
-
-The plugin verifies the sender, destination, currency, amount and confirmations against its node. It does not automatically discover deposits. If a transaction is awaiting confirmations, retry the same hash later; a previously credited hash cannot credit your Wallet twice. `/bank deposit` is a separate command that moves gameplay Wallet funds into gameplay Bank savings.
-
-### `/arkos security`
-
-**Additional permission:** `arkoviaeconomy.security`. Requires the operator-configured HTTPS security portal.
-
-Displays the public portal address, your TShock account name and a six-digit access code. Open the address, enter that account name and code, and remain logged into Terraria. The address can be bookmarked; keep the code private. It works once and expires after `SessionMinutes` (five by default). Five incorrect guesses invalidate the code; there is also a server-wide limit of 60 redemption attempts per minute. Generating another code invalidates your previous code and browser session. If you refresh or close the page, obtain a new code. The access code is separate from your transaction PIN.
-
-This command only opens access to the portal. It does not change your PIN or initiate a withdrawal by itself. The portal's withdrawals also require transfer configuration and `arkoviaeconomy.blockchain.withdraw`.
-
-### `/arkos pin`
-
-**Additional permission:** `arkoviaeconomy.security`. This is an alias for `/arkos security`: it issues an access code for the same portal, not a separate chat-based PIN command.
-
-On the page, set a **6–12 digit transaction PIN**. To change an existing PIN, supply the current PIN and the new PIN on that page. The PIN authorizes withdrawals; it is separate from your TShock password and blockchain recovery secret. Five failed PIN verifications cause a 15-minute lockout. This version does not include a forgotten-PIN recovery interface.
-
-Use `/arkos pin` with no arguments. Never enter a PIN as `/arkos pin 123456` or send it in chat.
-
-### `/arkos withdraw`
-
-**Additional permissions:** `arkoviaeconomy.security` to open the page and `arkoviaeconomy.blockchain.withdraw` to request/confirm a withdrawal. Requires a linked wallet, configured transfers, a funded server reserve, the signing service and the HTTPS portal.
-
-This is another alias for `/arkos security`. Run it **without an amount, address or PIN**; it issues an access code and does not immediately deduct funds.
-
-To withdraw:
-
-1. Open the portal address, sign in with your TShock account name and six-digit access code, and set your transaction PIN if needed.
-2. Enter a positive amount in the selected currency and your PIN on the page.
-3. Click **Review withdrawal**. Check the amount, destination account and actual network fee. The destination is your linked blockchain wallet; arbitrary destination addresses are not supported.
-4. Click **Confirm withdrawal** before the two-minute quote expires. Request a new quote if it expires.
-5. After successful confirmation, the gameplay Wallet amount is deducted and held for the outgoing blockchain payment. The background worker broadcasts it and checks confirmations. Use `/arkos transfers` to inspect progress.
-
-The server enforces withdrawal minimum/maximum amounts, daily limits, available Wallet funds, reserve coverage and currency precision. Network fees are paid by the server reserve in native ARKOS. The gameplay Bank is not deducted; move savings to Wallet with `/bank withdraw <amount>` first if needed.
-
-A pending payment is not an immediate failure or automatic refund. If its status remains unresolved, ask an administrator to inspect it before trying another withdrawal.
-
-### `/arkos transfers`
-
-Shows your ten most recent withdrawal and starter-grant records, including operation ID, status, amount and full hash when available. It requires the base `arkoviaeconomy.wallet` permission; it is not a deposit-history command. If none exist, it displays “No withdrawals or starter grants recorded yet.”
-
-- `Queued`: a starter grant is waiting to be prepared.
-- `Held`: a signed outgoing payment is recorded and awaiting broadcast or confirmation; a withdrawal's gameplay funds have been reserved.
-- `Confirmed`: the node reports the required confirmations.
-- `Refunded`: an administrator reconciled an expired, absent withdrawal and returned its gameplay funds.
-- `Expired`: an administrator reconciled an expired, absent starter grant.
-
-Operators: follow [blockchain, signer and PIN portal setup](docs/BLOCKCHAIN_SETUP.md). Installing the DLL alone does not enable transfers or configure the portal/recovery infrastructure.
+See [`docs/BLOCKCHAIN_SETUP.md`](docs/BLOCKCHAIN_SETUP.md) and [`docs/SECURITY.md`](docs/SECURITY.md).
 
 ---
 
-## 🛡️ Administrator Commands
+# Installation
 
-| Command | Permission | Description |
-|---|---|---|
-| `/rankadmin <account-id> approve` or `revoke` | `arkoviaeconomy.admin` plus base-group `arkoviaeconomy.rank.approve` (or console) | Approve or revoke rank-100 admin access; rank requirements and fee still apply |
-| `/treasury add <amount>` | `arkoviaeconomy.admin.treasury` | Add an audited amount to Terraria Treasury |
-| `/treasury take <amount>` | `arkoviaeconomy.admin.treasury` | Remove an audited amount from Terraria Treasury |
-| `/eco reload` | `arkoviaeconomy.admin.config` | Reload economy configuration |
-| `/eco sync` | `arkoviaeconomy.admin.treasury` | Run an immediate Arkovia funding synchronization |
-| `/eco give <user> <amount> <reason>` | `arkoviaeconomy.admin.adjust` | Create an audited positive administrative adjustment |
-| `/eco take <user> <amount> <reason>` | `arkoviaeconomy.admin.adjust` | Create an audited negative adjustment without allowing a negative balance |
-| `/eco freeze <user>` | `arkoviaeconomy.admin` | Freeze an economy account |
-| `/eco unfreeze <user>` | `arkoviaeconomy.admin` | Unfreeze an economy account |
-| `/eco reward <user> <amount> <reason>` | `arkoviaeconomy.admin.treasury` | Pay a manual reward from the actual Terraria Treasury |
+## Plugin
 
-Administrative adjustments are recorded through the economy ledger so operators can audit changes later.
+Requirements:
+
+- Terraria/TShock compatible with the target release;
+- .NET 9 runtime for the current TShock deployment;
+- SQLite or supported TShock database provider.
+
+Install:
+
+```text
+1. Download ArkoviaEconomy.dll from the latest GitHub Release.
+2. Place it in ServerPlugins/.
+3. Restart TShock.
+4. Review the generated ArkoviaEconomy configuration.
+5. Configure permissions for player/staff groups.
+```
+
+Do not hot-reload a release that adds/removes marketplace REST routes; a full TShock restart is the safer deployment path.
+
+## Marketplace web service
+
+The web service lives in:
+
+```text
+services/ArkoviaMarketplace/
+```
+
+Production deployments should bind it to loopback behind HTTPS Nginx or another trusted reverse proxy.
+
+Required environment values:
+
+```text
+ARKOVIA_TSHOCK_REST_TOKEN
+ARKOVIA_MARKET_SUBJECT_SECRET
+```
+
+Common optional values:
+
+```text
+ARKOVIA_TSHOCK_REST_URL=http://127.0.0.1:7878
+ARKOVIA_MARKET_COOKIE_SECURE=true
+ASPNETCORE_URLS=http://127.0.0.1:5080
+```
+
+The subject secret must be persistent. Changing it after accounts have linked would change derived web subjects and break existing links.
+
+The TShock REST token should belong to a dedicated least-privilege group with only the marketplace API permissions it needs.
 
 ---
 
-## 🔑 Permission Nodes
+# Important permissions
 
-Current permission nodes include:
+Core:
 
 ```text
 arkoviaeconomy.use
@@ -638,682 +453,128 @@ arkoviaeconomy.bank
 arkoviaeconomy.shop
 arkoviaeconomy.market
 arkoviaeconomy.jobs
-arkoviaeconomy.quests
-arkoviaeconomy.rank
-arkoviaeconomy.rank.approve
-arkoviaeconomy.security
-arkoviaeconomy.blockchain.deposit
-arkoviaeconomy.blockchain.withdraw
-arkoviaeconomy.blockchain.starter
-arkoviaeconomy.treasury.view
-arkoviaeconomy.wallet
 arkoviaeconomy.vote
+arkoviaeconomy.wallet
+```
 
+Towns/property:
+
+```text
+arkoviaeconomy.town
+arkoviaeconomy.town.create
+arkoviaeconomy.town.manage
+arkoviaeconomy.town.claim
+arkoviaeconomy.town.bank
+arkoviaeconomy.property
+arkoviaeconomy.admin.town
+```
+
+Marketplace REST service:
+
+```text
+arkoviaeconomy.api.marketplace.read
+arkoviaeconomy.api.marketplace.link
+arkoviaeconomy.api.marketplace.write
+```
+
+Administration:
+
+```text
 arkoviaeconomy.admin
 arkoviaeconomy.admin.adjust
 arkoviaeconomy.admin.treasury
 arkoviaeconomy.admin.config
 arkoviaeconomy.admin.audit
+arkoviaeconomy.admin.vote
 ```
 
-Example player/trusted-group permissions:
-
-```text
-/group addperm trusted arkoviaeconomy.use,arkoviaeconomy.pay,arkoviaeconomy.bank,arkoviaeconomy.wallet,arkoviaeconomy.vote
-```
-
-Grant progression commands separately as appropriate:
-
-```text
-/group addperm trusted arkoviaeconomy.rank,arkoviaeconomy.quests,arkoviaeconomy.jobs
-```
-
-Keep `arkoviaeconomy.rank.approve` restricted to trusted staff base groups. Rank-earned wildcard permissions cannot satisfy the base-group approval check.
-
-Example administrative permissions:
-
-```text
-/group addperm admin arkoviaeconomy.admin,arkoviaeconomy.admin.adjust,arkoviaeconomy.admin.treasury,arkoviaeconomy.admin.config,arkoviaeconomy.admin.audit
-```
-
-Server owners may instead grant the plugin wildcard permission where appropriate for their TShock permission structure.
+See [`docs/COMMANDS.md`](docs/COMMANDS.md) for the command reference.
 
 ---
 
-## 🚀 Installation
+# Security notes
 
-### Requirements
+Production invariants for this project:
 
-The current development environment uses:
+- no balance mutation without an accompanying ledger record;
+- no externally requested mutation without authenticated identity and server-side authorization;
+- no settlement based solely on browser-supplied values;
+- no ownership transfer before settlement completion;
+- no plaintext recovery secrets/private keys/PINs in logs, URLs, normal config, or ordinary gameplay records;
+- marketplace browser sessions use HttpOnly cookies, SameSite=Strict, CSRF tokens, rate limiting, and short server-side trust paths;
+- TShock REST should remain private/firewalled and should not be exposed directly to the public internet;
+- command aliases should not shadow unrelated TShock commands by default.
 
-```text
-Terraria Server: 1.4.5.8
-TShock / TSAPI: 6.1.x compatible build
-.NET 9
-```
+Review [`SECURITY.md`](SECURITY.md) and [`docs/SECURITY.md`](docs/SECURITY.md) before public deployment.
 
-Terraria and TShock compatibility changes over time. Always verify that the TShock build you are using supports your Terraria server version.
+---
 
-An Arkovia node is required only for blockchain-connected functionality such as treasury synchronization, blockchain wallet creation, and on-chain balance lookup.
+# Testing
 
-The off-chain Terraria economy should be treated separately from blockchain availability.
+The repository has GitHub Actions build/regression checks for the plugin, signer, and marketplace service.
 
-### Option A — Install the Included DLL
-
-The `v1.4.0-rc.2` repository build includes a compiled plugin at:
-
-```text
-release/ArkoviaEconomy.dll
-```
-
-Copy the DLL into the TShock server plugin directory:
-
-```text
-<TShock Server>/ServerPlugins/ArkoviaEconomy.dll
-```
-
-Then restart the TShock server.
-
-Check `tshock/ArkoviaEconomy/logs/arkovia-YYYY-MM-DD.log` for plugin initialization and diagnostics. Files rotate daily and at 10 MiB, with 14-day retention. The path follows your configured TShock save directory. Console reporting is reserved for log-write failures (rate-limited); TShock’s own messages and command auditing are separate. See [logging](docs/LOGGING.md).
-
-### Option B — Build from Source
-
-Clone the repository:
+Typical local validation:
 
 ```bash
-git clone https://github.com/mycreationhaven/Arkos-Economy-Terraria-Plugin.git
-cd Arkos-Economy-Terraria-Plugin
-```
-
-Restore and build:
-
-```bash
-dotnet restore
 dotnet build -c Release
+dotnet run --project tests/ArkoviaEconomy.Tests.csproj -c Release
+node tests/portal_ui_smoke.js
+node tests/marketplace_web_smoke.js
+dotnet build services/ArkoviaMarketplace/ArkoviaMarketplace.csproj -c Release
 ```
 
-Normal build output:
+The current v1.5 implementation increased the main regression suite to **349 checks** in addition to the settlement/security test group and web smoke tests.
+
+Live Terraria hooks, inventory delivery, real multiplayer behavior, MySQL-specific behavior, reverse-proxy configuration, and external blockchain/provider integrations still require staging/production validation beyond unit/regression tests.
+
+---
+
+# Release artifacts
+
+The authoritative downloadable plugin is published on the repository's **GitHub Releases** page as:
 
 ```text
-bin/Release/net9.0/ArkoviaEconomy.dll
+ArkoviaEconomy.dll
 ```
 
-Copy that DLL into the TShock `ServerPlugins` directory and restart TShock.
+Starting with `v1.5.0-rc.1`, the repository release workflow builds the DLL from the tagged commit, generates a SHA-256 checksum, and publishes both to GitHub Releases. This avoids keeping a stale compiled DLL in source control.
+
+The `release/` directory contains release metadata and operator notes; GitHub Releases is the source of truth for the compiled plugin binary.
 
 ---
 
-## 📦 Compiled Release
+# Roadmap
 
-The `release/` directory contains the precompiled plugin for operators who do not want to build the project themselves.
+The platform roadmap is documented in [`docs/PLATFORM_ROADMAP.md`](docs/PLATFORM_ROADMAP.md).
 
-The included DLL matches the `v1.4.0-rc.2` source, targets TShock 6.1.0 on .NET 9, and includes the TServerWeb compatibility correction. Its SHA-256 checksum is:
+Near-term work includes:
 
-```text
-b0558229197864b6852f4855ac7eda119462250c096725e2ad5050f59285f539
-```
-
-The source code used to build the plugin is included in the repository so operators can inspect and compile it independently.
-
-For security-sensitive or production deployments, building from reviewed source is encouraged.
-
----
-
-## ⚙️ First Startup
-
-On startup, Arkovia Economy initializes its configuration and economy storage under the TShock environment.
-
-A typical configuration path is:
-
-```text
-tshock/ArkoviaEconomy/config.json
-```
-
-Runtime configuration files may contain deployment-specific information and should not automatically be committed to a public repository.
-
-The repository provides a safe example configuration under:
-
-```text
-examples/config.example.json
-```
-
-Before upgrading a production installation, back up the economy database and configuration.
+- hardening item escrow/reconciliation around process crashes;
+- richer marketplace item presentation and filters;
+- player-to-player secondary stock exchange/order book;
+- companies/businesses and company treasuries;
+- rentals and lease state;
+- smart-region automation;
+- staff quality-of-life tooling;
+- optional crossplay integration kept separate from the economy authority model.
 
 ---
 
-## 🔧 Basic Configuration
+# Documentation
 
-Important configuration areas include:
-
-- currency name and symbol
-- decimal precision
-- transfer limits and fees
-- banking behavior
-- treasury solvency rules
-- voting providers, daily caps, currency, item and temporary-group rewards
-- gameplay rewards
-- death penalties
-- PvP economy settings
-- Arkovia node connectivity
-- blockchain confirmation requirements
-- treasury allocation percentage
-- public API/privacy options
-
-Use `/eco reload` after supported configuration changes when appropriate, or restart the server.
-
-For production systems, validate configuration changes on a test server before applying them to a live economy.
+- [`docs/COMMANDS.md`](docs/COMMANDS.md) — commands and permissions
+- [`docs/CONFIGURATION.md`](docs/CONFIGURATION.md) — economy configuration
+- [`docs/BLOCKCHAIN_SETUP.md`](docs/BLOCKCHAIN_SETUP.md) — deposits, withdrawals, signer, PIN setup
+- [`docs/VOTING.md`](docs/VOTING.md) — voting providers/rewards
+- [`docs/PROGRESSION.md`](docs/PROGRESSION.md) — ranks, quests, jobs
+- [`docs/EVENT_REWARDS.md`](docs/EVENT_REWARDS.md) — event settlement
+- [`docs/PLATFORM_ROADMAP.md`](docs/PLATFORM_ROADMAP.md) — towns, marketplace, companies, exchange roadmap
+- [`docs/SECURITY.md`](docs/SECURITY.md) — security architecture
+- [`CHANGELOG.md`](CHANGELOG.md) — release history
+- [`VALIDATION.md`](VALIDATION.md) — validation notes
 
 ---
 
-## 🌐 Arkovia Node Configuration
+## Project direction
 
-A local Arkovia node can be configured with a URL such as:
-
-```json
-{
-  "Arkovia": {
-    "Enabled": true,
-    "NodeUrl": "http://127.0.0.1:4876/nxt",
-    "CommunityDevelopmentAccount": "ARK-KVFL-C6EE-2UD2-CSJ8Q",
-    "ExpectedLedgerEventType": "BLOCK_GENERATED",
-    "MinimumConfirmations": 10,
-    "PollSeconds": 60,
-    "LedgerPageSize": 100,
-    "GameAllocationPercent": 100.0,
-    "FeeDistributionActivationHeight": 1500,
-    "CreditOnlyPositiveLedgerChanges": true,
-    "RequireNodeToBeLocalOrHttps": true
-  }
-}
-```
-
-Do not place blockchain secret phrases, private keys, forging credentials, wallet passwords, or signing-service secrets in this configuration.
-
-When the node runs on the same machine as TShock, localhost access is preferred over exposing sensitive node APIs to the public internet.
-
----
-
-## 🔍 Verifying Installation
-
-After starting TShock, verify that:
-
-1. Arkovia Economy loads without a fatal plugin error.
-2. An authenticated test player can run `/balance`.
-3. Wallet and Bank values display correctly.
-4. `/econhistory` returns ledger information.
-5. `/treasury` works for an appropriately permitted account.
-6. Gameplay rewards behave according to configuration.
-7. Death and PvP deductions never create negative Wallet balances.
-8. Blockchain commands work only when the Arkovia integration is correctly configured.
-9. After configuring voting, `/vote links` shows only enabled providers, `/vote status` shows UTC claim limits, and a small staging claim produces exactly one reward and one persistent claim record.
-
-Test economic changes with small values before opening a production server to players.
-
----
-
-## 🪙 Native ARKOS Configuration
-
-The native/default currency for this project is **ARKOS**.
-
-A standard ARKOS configuration should use:
-
-```json
-{
-  "CurrencyName": "ARKOS",
-  "CurrencySymbol": "ARKOS",
-  "Decimals": 8
-}
-```
-
-ARKOS uses eight decimal places, allowing very small gameplay rewards while keeping stored balances in integer atomic units.
-
----
-
-## Custom on-chain currency selection
-
-Set top-level `CurrencyId` to the numeric Arkovia Monetary System currency ID, or leave it blank for native ARKOS. At startup the node validates the ID and supplies the currency name, code and blockchain decimals. Invalid IDs or unavailable validation stop startup before economy commands and funding are enabled.
-
-See [currency setup and upgrade instructions](docs/CONFIGURATION.md#currency-selection-and-safe-upgrades). Off-chain `Decimals` stays at its existing scale; blockchain precision never rewrites stored balances. Changing an existing economy's currency requires explicit acceptance of relabeling its numeric balances.
-
-Administrators with `arkoviaeconomy.admin.treasury` can use `/treasury add <amount>`, `/treasury take <amount>`, and `/treasury`. Adjustments affect the internal treasury only, are audited, and cannot overdraw it.
-
-## 🎨 Customizing Native Currency Presentation
-
-Arkovia Economy is designed so server operators can customize the currency presented inside Terraria.
-
-For example, a project using a currency called **Star Coin** could configure:
-
-```json
-{
-  "CurrencyName": "Star Coin",
-  "CurrencySymbol": "STAR",
-  "Decimals": 8
-}
-```
-
-Gameplay messages could then appear as:
-
-```text
-You earned 0.00100000 STAR for killing Zombie.
-```
-
-and balances could be presented using the configured `STAR` symbol instead of `ARKOS`.
-
-### What CurrencyName controls
-
-`CurrencyName` is the human-readable name used to describe the economy currency.
-
-Examples:
-
-```text
-ARKOS
-Star Coin
-Kingdom Credit
-Adventure Token
-```
-
-### What CurrencySymbol controls
-
-`CurrencySymbol` is the short ticker or symbol displayed with gameplay amounts.
-
-Examples:
-
-```text
-ARKOS
-STAR
-KC
-ATK
-```
-
-The configured symbol is also used by gameplay messages and other economy presentation.
-
----
-
-## ⚠️ Renaming the Currency Does Not Create a Blockchain
-
-Changing `CurrencyName` or `CurrencySymbol` changes the **Terraria economy presentation**.
-
-It does **not** automatically:
-
-- create a new cryptocurrency
-- create a new blockchain network
-- change Arkovia consensus rules
-- change the blockchain account/address format
-- create a new treasury account
-- create blockchain liquidity or market value
-- change the native asset returned by a connected node
-
-For example, changing the gameplay symbol from `ARKOS` to `STAR` does not cause an Arkovia node holding ARKOS to suddenly hold a separate STAR blockchain asset.
-
-The underlying blockchain configuration must match the currency the server operator intends to represent.
-
----
-
-## 🧩 Custom Arkovia Project Checklist
-
-If you operate your own Arkovia-based blockchain or compatible currency project, review each of these areas before connecting it to Terraria.
-
-### 1. Currency presentation
-
-Configure:
-
-```text
-CurrencyName
-CurrencySymbol
-Decimals
-```
-
-The current economy architecture is designed around eight-decimal atomic accounting. Changing decimal behavior should be tested carefully throughout the entire economy before production use.
-
-### 2. Blockchain node
-
-Set the node endpoint used by your deployment:
-
-```json
-"NodeUrl": "http://127.0.0.1:4876/nxt"
-```
-
-Use the actual endpoint for your own trusted Arkovia-compatible node.
-
-Do not point a production economy at an unknown or untrusted public node without understanding the security implications.
-
-### 3. Treasury/funding account
-
-The default project monitors:
-
-```text
-ARK-KVFL-C6EE-2UD2-CSJ8Q
-```
-
-That is the Arkovia Community & Development account used by the native project configuration.
-
-An independent Arkovia-based project must determine whether that account is appropriate for its network.
-
-If your blockchain uses a different funding or treasury account, configure and validate the correct public account for your network.
-
-### 4. Funding event behavior
-
-The native Arkovia integration expects:
-
-```text
-BLOCK_GENERATED
-```
-
-ledger credits for the Community & Development funding mechanism.
-
-If your blockchain changes consensus-level fee distribution or ledger event behavior, review the synchronizer before enabling automatic treasury funding.
-
-### 5. Account/address format
-
-Changing the Terraria currency symbol does not automatically change blockchain addresses.
-
-The blockchain address format is determined by the connected blockchain/network implementation.
-
-Do not assume a custom gameplay ticker implies a custom blockchain address prefix.
-
-### 6. Wallet generation
-
-Player wallet generation depends on the connected Arkovia-compatible node returning the expected account ID, account address, and public key behavior.
-
-Test wallet generation on a non-production server before allowing players to create wallets.
-
-### 7. Treasury economics
-
-Decide how gameplay currency enters and leaves the economy.
-
-Consider:
-
-- treasury funding rate
-- gameplay reward ranges
-- server fees
-- death penalties
-- PvP redistribution
-- future shops and services
-- configured deposits and withdrawals
-- reserve requirements
-
-A custom ticker alone is not an economic policy.
-
-### 8. Security
-
-Never copy private blockchain credentials into the Terraria plugin simply because your custom network uses different accounts.
-
-Keep signing infrastructure isolated from normal gameplay infrastructure.
-
----
-
-## 💡 Example Custom Deployment
-
-Imagine a server project called **Starlight Realm** running an Arkovia-based network with a currency named **STAR**.
-
-Its gameplay configuration might begin with:
-
-```json
-{
-  "CurrencyName": "Starlight Coin",
-  "CurrencySymbol": "STAR",
-  "Decimals": 8,
-  "StartingBalance": 0.0,
-  "Arkovia": {
-    "Enabled": true,
-    "NodeUrl": "http://127.0.0.1:4876/nxt",
-    "CommunityDevelopmentAccount": "YOUR-PUBLIC-ACCOUNT-HERE",
-    "ExpectedLedgerEventType": "BLOCK_GENERATED",
-    "MinimumConfirmations": 10
-  }
-}
-```
-
-`YOUR-PUBLIC-ACCOUNT-HERE` is intentionally a placeholder.
-
-Do not paste a secret phrase or private key there. The funding synchronizer requires a **public blockchain account**, not its private recovery credentials.
-
-The operator would then validate that its blockchain implements the ledger behavior expected by the plugin before enabling automatic treasury synchronization.
-
----
-
-## 🎯 Economy Balancing Starting Points
-
-Every Terraria server has a different population, play style, treasury size, and desired progression speed.
-
-The following values are useful starting ranges for testing rather than universal rules:
-
-| Activity | Suggested ARKOS range |
-|---|---:|
-| Common enemy | 0.0001 - 0.001 |
-| Strong / rare enemy | 0.005 - 0.05 |
-| Early boss | 0.10 - 0.25 |
-| Mid-game boss | 0.25 - 0.50 |
-| End-game boss | 0.50 - 1.00 |
-| Quest | 0.05 - 0.25 |
-| Normal death | 25% of Wallet |
-| PvP death | -0.01 |
-
-Operators using a custom currency should scale these values to the economics of that currency rather than copying ARKOS values blindly.
-
----
-
-## 🏰 Old Ones Army / DD2 and Other Events
-
-DD2 now tracks genuine event-enemy contributions and pays a configured multiplayer pool after confirmed victory. The hook order handles Terraria's nested victory callback correctly. Additional completion pools cover Goblin Army, Frost Legion, Pirate Invasion, Martian Madness, Blood Moon, Solar Eclipse, Pumpkin Moon, and Frost Moon.
-
-Pools are proportional to damage, conserve atomic units exactly, and settle all recipients and ledger entries in one database transaction. Completed events wait in a durable queue if funds or recipient limits prevent settlement. Active, unfinished encounter contributions are not recovered across server restarts. Normal NPC rewards remain separate.
-
-See [event configuration and completion rules](docs/EVENT_REWARDS.md).
-
----
-
-## 🧑‍💻 Developer API
-
-Arkovia Economy includes an internal API surface intended to make future Terraria systems use the same audited economy instead of implementing separate balance logic.
-
-Potential integrations include:
-
-- shops
-- player markets
-- jobs
-- quests
-- event rewards
-- minigames
-- server services
-- custom NPC systems
-- web dashboards
-- deposit and withdrawal services
-
-Integrations should use the central economy service whenever possible so balance changes remain auditable and treasury rules are consistently enforced.
-
-See:
-
-```text
-docs/API.md
-```
-
----
-
-## 🗃️ Database and Ledger
-
-Arkovia Economy maintains its own economy data rather than treating chat commands as the source of truth.
-
-The database tracks financial state and an auditable ledger of economy activity.
-
-Examples of ledger activity include:
-
-- player transfers
-- Wallet / Bank movement
-- gameplay rewards
-- death penalties
-- PvP redistribution
-- treasury funding
-- administrative adjustments
-- manual treasury rewards
-
-Blockchain wallet records store public wallet identity separately from ordinary gameplay balances.
-
-Private recovery secrets must not be stored in ordinary economy database records.
-
-See:
-
-```text
-docs/DATABASE.md
-```
-
----
-
-## 🔒 Security Principles
-
-Cryptocurrency integration adds responsibilities that do not exist in a normal game-points plugin.
-
-This project follows several important principles:
-
-1. **Never store blockchain secret phrases in the normal TShock economy database.**
-2. **Never log recovery secrets, private keys, or internal API credentials.**
-3. **Never ask players to type blockchain secrets into Terraria chat.**
-4. **Keep public wallet information separate from private recovery material.**
-5. **Prefer localhost communication for blockchain and signing infrastructure on the same server.**
-6. **Use public account/address information for balance lookups whenever possible.**
-7. **Keep gameplay transactions off-chain unless blockchain settlement is actually required.**
-8. **Do not commit runtime databases, recovery artifacts, API keys, private keys, secret phrases, worlds, TLS keys, or production configuration files.**
-9. **Back up economy data before upgrades.**
-10. **Test financial changes with small values before production deployment.**
-
-Read the repository security documentation before enabling blockchain-wallet functionality:
-
-```text
-SECURITY.md
-docs/SECURITY.md
-```
-
----
-
-## 🛣️ Roadmap
-
-Version `v1.4.0-rc.1` includes Terraria-Servers.com and TServerWeb vote rewards, persistent claim protection, daily caps, configurable currency/items/temporary groups, dedicated plugin logs, paid ranks, quests and jobs, event rewards, deposits, withdrawals, starter grants, and PIN-protected transfer workflows. Live provider, game-server, and node staging remains required before production use.
-
-Future work includes full reserve/liability reports, automatic deposit discovery, external-wallet ownership linking, forgotten-PIN recovery tooling, boss-specific pools, active-encounter restart recovery, shop/market features, and mining/fishing/crafting job objectives. See [the current roadmap](docs/ROADMAP.md).
-
----
-
-## 🗂️ Repository Layout
-
-```text
-Arkos-Economy-Terraria-Plugin/
-├── Api/
-│   └── ArkoviaEconomyApi.cs
-├── Commands/
-│   └── EconomyCommands.cs
-├── Config/
-│   ├── ConfigManager.cs
-│   └── EconomyConfig.cs
-├── Core/
-│   └── EconomyService.cs
-├── Database/
-│   ├── EconomyDatabase.cs
-│   ├── SettlementDatabase.cs
-│   └── VoteDatabase.cs
-├── Gameplay/
-│   ├── GameplayEconomyHandler.cs
-│   └── WorldEventTracker.cs
-├── Integrations/
-│   ├── ArkoviaFundingSynchronizer.cs
-│   ├── ArkoviaNodeClient.cs
-│   ├── BlockchainTransferService.cs
-│   ├── TransferNodeClient.cs
-│   └── WalletClaimClient.cs
-├── Models/
-│   ├── EconomyModels.cs
-│   ├── SettlementModels.cs
-│   └── WalletModels.cs
-├── Progression/
-├── Security/
-├── Voting/
-│   └── VoteRewardsService.cs
-├── services/
-│   └── ArkoviaSigner/
-├── tests/
-├── docs/
-├── examples/
-├── release/
-│   ├── ArkoviaEconomy.dll
-│   └── README.md
-├── ArkoviaEconomy.csproj
-├── ArkoviaEconomyPlugin.cs
-├── Permissions.cs
-├── CHANGELOG.md
-├── LICENSE
-├── README.md
-├── SECURITY.md
-└── VALIDATION.md
-```
-
----
-
-## 📚 Documentation
-
-Additional documentation is available in the `docs/` directory:
-
-| Document | Purpose |
-|---|---|
-| `docs/INSTALLATION.md` | Installation and deployment |
-| `docs/CONFIGURATION.md` | Configuration reference |
-| `docs/COMMANDS.md` | Commands and permissions |
-| `docs/ARKOVIA_BLOCKCHAIN.md` | Arkovia blockchain integration |
-| `docs/ECONOMY_DESIGN.md` | Economy architecture and design |
-| `docs/DATABASE.md` | Database and ledger structure |
-| `docs/API.md` | Developer integration API |
-| `docs/SECURITY.md` | Detailed security guidance |
-| [docs/PROGRESSION.md](docs/PROGRESSION.md) | Ranks, permissions, quests, jobs and default progression requirements |
-| [docs/LOGGING.md](docs/LOGGING.md) | Plugin log location, rotation and retention |
-| [docs/BLOCKCHAIN_SETUP.md](docs/BLOCKCHAIN_SETUP.md) | Transfer reserve, signer and HTTPS PIN portal deployment |
-| [docs/EVENT_REWARDS.md](docs/EVENT_REWARDS.md) | World event reward configuration and settlement rules |
-| [docs/VOTING.md](docs/VOTING.md) | Voting providers, commands, rewards, daily caps and deployment checklist |
-| `docs/ROADMAP.md` | Remaining development |
-
----
-
-## 🤝 Contributing
-
-Contributions, testing, bug reports, documentation improvements, and security reviews are welcome.
-
-When changing economy behavior:
-
-- preserve integer atomic accounting
-- preserve ledger auditability
-- avoid negative balances unless explicitly designed and documented
-- maintain TShock account identity safety
-- do not expose blockchain secrets
-- keep tenant/server-specific credentials out of source control
-- test treasury effects
-- test multiplayer edge cases
-- test duplicate-event handling
-- document whether a feature is implemented, experimental, or planned
-
-For security-sensitive changes, review `SECURITY.md` before opening a public issue containing implementation details.
-
----
-
-## 🧪 Development Philosophy
-
-Arkovia Economy is built around a simple separation of concerns:
-
-> **Terraria should remain fast enough to feel like a game, while blockchain settlement should remain deliberate enough to behave like money.**
-
-That means ordinary monster kills, PvP activity, banking, shops, quests, and other high-frequency actions belong in the off-chain gameplay ledger.
-
-Blockchain operations are reserved for actions where public ownership, settlement, deposits, withdrawals, or other on-chain properties are actually useful.
-
-The result is intended to feel like a Terraria economy first, while still allowing players and server operators to connect that economy to the Arkovia ecosystem.
-
----
-
-## 📜 License
-
-This project is licensed under the **GNU General Public License v3.0 or later (GPL-3.0-or-later)**.
-
-See the included `LICENSE` file for the complete license terms.
-
----
-
-## 🌎 Project Goal
-
-The long-term goal of Arkovia Economy is to provide an open, auditable bridge between Terraria gameplay economies and the Arkovia blockchain without forcing every sword swing, monster kill, or player transaction onto the blockchain.
-
-Build worlds. Create economies. Let players own what actually needs to be on-chain.
+Arkovia Economy is evolving into a persistent Terraria economy/platform where players can earn, save, trade, own property, build towns and businesses, participate in player-created companies, and manage assets from both Terraria and the web—while keeping authority and settlement on trusted server-side systems rather than in the browser.
