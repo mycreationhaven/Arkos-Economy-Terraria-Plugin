@@ -169,6 +169,7 @@ checks += MarketplaceTests.Run();
 checks += MarketplaceReadApiTests.Run();
 checks += MarketplaceAccountLinkTests.Run();
 checks += MarketplaceUserViewTests.Run();
+checks += TradingTests.Run();
 connection.Close();
 SqliteConnection.ClearAllPools();
 File.Delete(databasePath);

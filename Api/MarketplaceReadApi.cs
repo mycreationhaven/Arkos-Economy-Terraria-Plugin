@@ -14,7 +14,8 @@ namespace ArkoviaEconomy.Api;
 public sealed class MarketplaceReadApi(
     EconomyDatabase db,
     Func<EconomyConfig> config,
-    MarketplaceAccountLinkService links) : IDisposable
+    MarketplaceAccountLinkService links,
+    PlayerTradingService? trading = null) : IDisposable
 {
     private volatile bool _active = true;
     private bool _registered;
@@ -122,6 +123,7 @@ public sealed class MarketplaceReadApi(
         result["sellableAssets"] = MarketplaceReadProjection.GetPlayerSellableAssets(db, ownerId, 100);
         result["listings"] = MarketplaceReadProjection.GetPlayerListings(db, cfg, ownerId, 100);
         result["purchases"] = MarketplaceReadProjection.GetPlayerPurchases(db, cfg, ownerId, 100);
+        result["stocks"] = trading?.Holdings(link.TShockUserId).Select(x => new { x.Ticker, x.Name, x.Shares, x.PriceAtomic, price = cfg.FromAtomic(x.PriceAtomic), x.MarketValueAtomic, marketValue = cfg.FromAtomic(x.MarketValueAtomic) }).ToList() ?? [];
         return result;
     }
 
@@ -244,8 +246,6 @@ public static class MarketplaceReadProjection
         var result = new List<MarketplaceSellableAssetView>();
         foreach (var asset in db.GetAssetsForOwner("player", playerOwnerId, "active", limit))
         {
-            // Region/property assets use a separate policy flow because ownership also controls
-            // TShock region ACLs. Town assets are governance objects, not ordinary player goods.
             if (asset.AssetType is "town" or "land" or "property")
                 continue;
             result.Add(new MarketplaceSellableAssetView(

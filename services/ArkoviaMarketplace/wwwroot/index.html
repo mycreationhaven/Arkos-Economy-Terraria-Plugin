@@ -15,6 +15,8 @@
     <div id="sessionArea" class="session-area"></div>
   </header>
 
+  <section class="stock-tape" aria-label="Arkovia stock market"><div class="stock-tape-label">ARKOVIA EXCHANGE</div><div class="stock-tape-viewport"><div id="stockTape" class="stock-tape-track">Loading stocks…</div></div></section>
+
   <main>
     <section class="hero panel">
       <div>
@@ -47,7 +49,15 @@
     <div id="marketMessage" class="message"></div>
 
     <section id="accountPanel" class="hidden">
-      <div class="section-head"><div><span class="eyebrow">YOUR ACCOUNT</span><h2>Sellable assets</h2></div></div>
+      <div class="section-head"><div><span class="eyebrow">LIVE CHARACTER</span><h2>In-game inventory</h2><p>Your character must be online. Pick an item, quantity, and price to put it in secure marketplace escrow.</p></div><button id="inventoryRefresh" class="secondary">Refresh inventory</button></div>
+      <section id="inventoryGrid" class="grid"></section>
+
+      <div class="section-head"><div><span class="eyebrow">PORTFOLIO</span><h2>Your stocks</h2></div></div>
+      <section id="stockHoldingGrid" class="grid"></section>
+
+      <div class="section-head"><div><span class="eyebrow">DELIVERY</span><h2>Purchased & returned items</h2></div><button id="claimItemsButton" class="secondary">Claim to Terraria</button></div>
+
+      <div class="section-head"><div><span class="eyebrow">YOUR ACCOUNT</span><h2>Other sellable assets</h2></div></div>
       <section id="assetGrid" class="grid"></section>
 
       <div class="section-head"><div><span class="eyebrow">YOUR ACTIVITY</span><h2>Your listings</h2></div></div>
@@ -69,6 +79,9 @@
       <div id="sellMessage" class="message"></div>
     </form>
   </dialog>
+
+  <dialog id="stockDialog"><form id="stockForm" method="dialog" class="dialog-card"><button type="button" id="closeStock" class="icon-button" aria-label="Close">×</button><span class="eyebrow">ARKOVIA EXCHANGE</span><h2 id="stockName">Stock</h2><div id="stockDetail" class="stock-detail"></div><input id="stockTicker" type="hidden"><label>Shares<input id="stockShares" type="number" min="1" max="1000000" value="1" required></label><button type="submit">Buy shares</button><div id="stockMessage" class="message"></div></form></dialog>
+  <dialog id="inventorySellDialog"><form id="inventorySellForm" method="dialog" class="dialog-card"><button type="button" id="closeInventorySell" class="icon-button" aria-label="Close">×</button><span class="eyebrow">SELL FROM INVENTORY</span><h2 id="inventorySellName">Sell item</h2><input id="inventorySlot" type="hidden"><label>Quantity<input id="inventoryQuantity" type="number" min="1" required></label><label>Total price in ARKOS<input id="inventoryPrice" type="text" inputmode="decimal" required></label><button type="submit">List item</button><div id="inventorySellMessage" class="message"></div></form></dialog>
 
   <script src="/app.js" defer></script>
 </body>

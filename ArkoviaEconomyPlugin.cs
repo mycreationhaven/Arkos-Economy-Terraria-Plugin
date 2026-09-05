@@ -26,6 +26,8 @@ public sealed class ArkoviaEconomyPlugin : TerrariaPlugin
     private MarketplaceWebMutationService? _marketplaceWebMutations;
     private MarketplaceReadApi? _marketplaceReadApi;
     private MarketplaceMutationApi? _marketplaceMutationApi;
+    private PlayerTradingService? _playerTrading;
+    private MarketplacePlayerApi? _marketplacePlayerApi;
     private ArkoviaNodeClient? _node;
     private WalletClaimClient? _walletClaimClient;
     private ArkoviaFundingSynchronizer? _sync;
@@ -63,11 +65,14 @@ public sealed class ArkoviaEconomyPlugin : TerrariaPlugin
         _marketplace.CleanupExpiredReservations();
         _marketplaceLinks = new MarketplaceAccountLinkService(_database);
         _marketplaceWebMutations = new MarketplaceWebMutationService(_database, _marketplace, _towns);
+        _playerTrading = new PlayerTradingService(_database, _marketplace, () => _config.Current);
 
-        _marketplaceReadApi = new MarketplaceReadApi(_database, () => _config.Current, _marketplaceLinks);
+        _marketplaceReadApi = new MarketplaceReadApi(_database, () => _config.Current, _marketplaceLinks, _playerTrading);
         _marketplaceReadApi.Register();
         _marketplaceMutationApi = new MarketplaceMutationApi(_database, () => _config.Current, _marketplaceWebMutations);
         _marketplaceMutationApi.Register();
+        _marketplacePlayerApi = new MarketplacePlayerApi(_database, _playerTrading);
+        _marketplacePlayerApi.Register();
 
         _walletClaimClient = new WalletClaimClient();
         _sync = new ArkoviaFundingSynchronizer(_node, _database, _economy, () => _config.Current);
@@ -84,6 +89,8 @@ public sealed class ArkoviaEconomyPlugin : TerrariaPlugin
 
         _commands.AddRange(new TownCommands(_towns, _database, _config).Build());
         _commands.AddRange(new MarketplaceCommands(_marketplace, _marketplaceLinks, _towns, _database, _config).Build());
+        _commands.AddRange(new StockCommands(_playerTrading, _database, () => _config.Current).Build());
+        _commands.Add(new Command(Permissions.Market, a => { try { var n = _playerTrading.ClaimItems(a.Player); a.Player.SendSuccessMessage(n == 0 ? "No marketplace items are waiting to be claimed." : $"Claimed {n} marketplace item stack(s)." ); } catch (Exception ex) { a.Player.SendErrorMessage(ex.Message); } }, "claimitems"));
 
         _voting = new VoteRewardsService(_database, _economy, () => _config.Current);
         _commands.AddRange(_voting.BuildCommands());
@@ -115,6 +122,7 @@ public sealed class ArkoviaEconomyPlugin : TerrariaPlugin
 
             _progression?.Dispose();
             _gameplay?.Dispose();
+            _marketplacePlayerApi?.Dispose();
             _marketplaceMutationApi?.Dispose();
             _marketplaceReadApi?.Dispose();
             _portal?.Dispose();

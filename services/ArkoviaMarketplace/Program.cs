@@ -82,6 +82,18 @@ app.MapGet("/api/status", async (TShockMarketplaceClient tshock, CancellationTok
 app.MapGet("/api/listings", async (TShockMarketplaceClient tshock, CancellationToken ct) =>
     await Proxy(await tshock.GetAsync("/marketplace/api/v1/listings?limit=100", ct)));
 
+app.MapGet("/api/stocks", async (TShockMarketplaceClient tshock, CancellationToken ct) =>
+    await Proxy(await tshock.GetAsync("/marketplace/api/v1/stocks", ct)));
+
+app.MapGet("/api/stocks/{ticker}", async (string ticker, TShockMarketplaceClient tshock, CancellationToken ct) =>
+    await Proxy(await tshock.GetAsync($"/marketplace/api/v1/stocks/{Uri.EscapeDataString(ticker)}", ct)));
+
+app.MapGet("/api/inventory", async (HttpContext context, MarketplaceSessionStore sessions, TShockMarketplaceClient tshock, CancellationToken ct) =>
+{
+    if (!sessions.TryGet(context, out var session)) return Results.Unauthorized();
+    return await Proxy(await tshock.GetAsync($"/marketplace/api/v1/player/inventory/{Uri.EscapeDataString(session.WebSubject)}", ct));
+});
+
 app.MapGet("/api/session", (HttpContext context, MarketplaceSessionStore sessions) =>
 {
     if (!sessions.TryGet(context, out var session))
@@ -160,6 +172,35 @@ app.MapGet("/api/me", async (
         return Results.Unauthorized();
     var path = $"/marketplace/api/v1/me/{Uri.EscapeDataString(session.WebSubject)}";
     return await Proxy(await tshock.GetAsync(path, ct));
+});
+
+app.MapPost("/api/marketplace/inventory-list", async (InventoryListingRequest request, HttpContext context, MarketplaceSessionStore sessions, TShockMarketplaceClient tshock, CancellationToken ct) =>
+{
+    if (!sessions.TryGet(context, out var session)) return Results.Unauthorized();
+    if (!RequireCsrf(context, session)) return Results.StatusCode(StatusCodes.Status403Forbidden);
+    if (!TryOperationKey(context, out var operationKey, out var operationError)) return operationError!;
+    if (request.Slot < 0 || request.Slot > 58 || request.Quantity <= 0 || !long.TryParse(request.PriceAtomic, out var price) || price <= 0) return Results.BadRequest(new { error = "Invalid inventory listing values." });
+    var path=$"/marketplace/api/v1/mutate/inventory-list/{Uri.EscapeDataString(session.WebSubject)}/{request.Slot}/{request.Quantity}/{price}/{Uri.EscapeDataString(operationKey)}";
+    return await Proxy(await tshock.GetAsync(path,ct));
+});
+
+app.MapPost("/api/stocks/buy", async (StockBuyRequest request, HttpContext context, MarketplaceSessionStore sessions, TShockMarketplaceClient tshock, CancellationToken ct) =>
+{
+    if (!sessions.TryGet(context, out var session)) return Results.Unauthorized();
+    if (!RequireCsrf(context, session)) return Results.StatusCode(StatusCodes.Status403Forbidden);
+    if (!TryOperationKey(context, out var operationKey, out var operationError)) return operationError!;
+    if (request.Shares <= 0 || request.Shares > 1000000) return Results.BadRequest(new { error = "Invalid share quantity." });
+    var ticker=(request.Ticker??"").Trim().ToUpperInvariant(); if(ticker.Length<1||ticker.Length>12)return Results.BadRequest(new {error="Invalid ticker."});
+    var path=$"/marketplace/api/v1/mutate/stock-buy/{Uri.EscapeDataString(session.WebSubject)}/{Uri.EscapeDataString(ticker)}/{request.Shares}/{Uri.EscapeDataString(operationKey)}";
+    return await Proxy(await tshock.GetAsync(path,ct));
+});
+
+app.MapPost("/api/marketplace/claim-items", async (HttpContext context, MarketplaceSessionStore sessions, TShockMarketplaceClient tshock, CancellationToken ct) =>
+{
+    if (!sessions.TryGet(context, out var session)) return Results.Unauthorized();
+    if (!RequireCsrf(context, session)) return Results.StatusCode(StatusCodes.Status403Forbidden);
+    if (!TryOperationKey(context, out var operationKey, out var operationError)) return operationError!;
+    return await Proxy(await tshock.GetAsync($"/marketplace/api/v1/mutate/claim-items/{Uri.EscapeDataString(session.WebSubject)}/{Uri.EscapeDataString(operationKey)}",ct));
 });
 
 app.MapPost("/api/marketplace/list", async (
@@ -260,6 +301,8 @@ static async Task<IResult> Proxy(ProxyResponse response)
 
 sealed record LinkRequest(string? Account, string? Code);
 sealed record ListingRequest(string? AssetId, string? PriceAtomic);
+sealed record InventoryListingRequest(int Slot, int Quantity, string? PriceAtomic);
+sealed record StockBuyRequest(string? Ticker, long Shares);
 sealed record ListingActionRequest(string? ListingId);
 sealed record ProxyResponse(HttpStatusCode StatusCode, string Body)
 {
