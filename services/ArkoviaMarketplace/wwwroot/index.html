@@ -30,10 +30,10 @@
 
     <section id="linkPanel" class="panel hidden">
       <h2>Link your Terraria account</h2>
-      <p>In game, run <code>/market link</code>, then enter your Terraria account name and the 8-digit code here.</p>
+      <p>In game, run <code>/market link</code>, then enter your Terraria account name and the 6-digit code here. The code is valid for 5 minutes.</p>
       <form id="linkForm" class="form-row">
         <label>Terraria account<input id="accountInput" maxlength="64" autocomplete="username" required></label>
-        <label>8-digit code<input id="codeInput" inputmode="numeric" pattern="[0-9]{8}" maxlength="8" autocomplete="one-time-code" required></label>
+        <label>6-digit code<input id="codeInput" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" required></label>
         <button type="submit">Link account</button>
       </form>
       <div id="linkMessage" class="message"></div>
