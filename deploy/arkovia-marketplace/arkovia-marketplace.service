@@ -1,0 +1,35 @@
+[Unit]
+Description=Arkovia Marketplace Web
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=arkovia-market
+Group=arkovia-market
+WorkingDirectory=/opt/arkovia/marketplace
+EnvironmentFile=/etc/arkovia/marketplace.env
+ExecStart=/usr/bin/dotnet /opt/arkovia/marketplace/ArkoviaMarketplace.dll
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=20
+KillSignal=SIGINT
+
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+CapabilityBoundingSet=
+AmbientCapabilities=
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target
