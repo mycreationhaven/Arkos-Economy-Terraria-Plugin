@@ -1,5 +1,6 @@
 using ArkoviaEconomy.Models;
 using TShockAPI;
+using TShockAPI.DB;
 
 namespace ArkoviaEconomy.Database;
 
