@@ -20,6 +20,7 @@ public sealed class ArkoviaEconomyPlugin : TerrariaPlugin
     private ConfigManager? _config;
     private EconomyDatabase? _database;
     private EconomyService? _economy;
+    private TownService? _towns;
     private ArkoviaNodeClient? _node;
     private WalletClaimClient? _walletClaimClient;
     private ArkoviaFundingSynchronizer? _sync;
@@ -67,6 +68,7 @@ public sealed class ArkoviaEconomyPlugin : TerrariaPlugin
                 () => _config.Current);
 
         _economy.GetTreasury();
+        _towns = new TownService(_database, _economy);
 
         _walletClaimClient = new WalletClaimClient();
 
@@ -95,6 +97,9 @@ public sealed class ArkoviaEconomyPlugin : TerrariaPlugin
 
         _commands =
             handlers.Build().ToList();
+
+        var townCommands = new TownCommands(_towns, _database, _config);
+        _commands.AddRange(townCommands.Build());
 
         _voting = new VoteRewardsService(_database, _economy, () => _config.Current);
         _commands.AddRange(_voting.BuildCommands());
