@@ -71,6 +71,54 @@ public sealed class TownService
             _db.LeaveTown(town.TownId, userId);
     }
 
+    public void Promote(ArkoviaTown town, int actorUserId, int targetUserId)
+    {
+        RequireMayor(town, actorUserId);
+        if (actorUserId == targetUserId)
+            throw new InvalidOperationException("The mayor cannot promote themselves.");
+        var target = RequireMember(town, targetUserId);
+        if (string.Equals(target.Role, "assistant", StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException("That member is already an assistant.");
+        if (!string.Equals(target.Role, "resident", StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException("Only residents can be promoted to assistant.");
+        lock (_gate)
+            _db.SetTownMemberRole(town.TownId, targetUserId, target.Role, "assistant");
+    }
+
+    public void Demote(ArkoviaTown town, int actorUserId, int targetUserId)
+    {
+        RequireMayor(town, actorUserId);
+        var target = RequireMember(town, targetUserId);
+        if (!string.Equals(target.Role, "assistant", StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException("Only assistants can be demoted.");
+        lock (_gate)
+            _db.SetTownMemberRole(town.TownId, targetUserId, target.Role, "resident");
+    }
+
+    public void Kick(ArkoviaTown town, int actorUserId, int targetUserId)
+    {
+        RequireManager(town, actorUserId);
+        if (actorUserId == targetUserId)
+            throw new InvalidOperationException("Use /town leave to leave your town.");
+        var actor = RequireMember(town, actorUserId);
+        var target = RequireMember(town, targetUserId);
+        if (string.Equals(target.Role, "mayor", StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException("The mayor cannot be kicked.");
+        if (string.Equals(actor.Role, "assistant", StringComparison.OrdinalIgnoreCase) &&
+            !string.Equals(target.Role, "resident", StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException("Assistants may only kick residents.");
+        lock (_gate)
+            _db.KickTownMember(town.TownId, targetUserId);
+    }
+
+    public void TransferLeadership(ArkoviaTown town, int actorUserId, int targetUserId)
+    {
+        RequireMayor(town, actorUserId);
+        RequireMember(town, targetUserId);
+        lock (_gate)
+            _db.TransferTownLeadership(town.TownId, actorUserId, targetUserId);
+    }
+
     public EconomyAccount GetTreasuryAccount(ArkoviaTown town)
         => _db.GetAccountById(town.TreasuryAccountId)
            ?? throw new InvalidOperationException("Town treasury account was not found.");
@@ -110,5 +158,12 @@ public sealed class TownService
         var worldKey = Main.worldID.ToString();
         lock (_gate)
             return _db.CreateTownProperty(town.TownId, "land", worldKey, region.Name, region.Name);
+    }
+
+    public void UnclaimRegion(ArkoviaTown town, int actorUserId, string regionName)
+    {
+        RequireMayor(town, actorUserId);
+        lock (_gate)
+            _db.UnclaimTownProperty(town.TownId, Main.worldID.ToString(), regionName);
     }
 }
