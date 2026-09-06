@@ -4,15 +4,15 @@ using ArkoviaEconomy.Database;
 
 namespace ArkoviaEconomy.Core;
 
-public sealed record MarketplaceLinkChallenge(string AccountName, string Code, DateTime ExpiresUtc);
+public sealed record MarketplaceLinkChallenge(string AccountName, string WalletAddress, string Code, DateTime ExpiresUtc);
 
 public sealed class MarketplaceAccountLinkService
 {
-    private sealed record Challenge(int UserId, string AccountName, byte[] Salt, byte[] Hash, DateTime ExpiresUtc, int Attempts);
+    private sealed record Challenge(int UserId, string AccountName, string WalletAddress, byte[] Salt, byte[] Hash, DateTime ExpiresUtc, int Attempts);
 
     private readonly EconomyDatabase _db;
     private readonly object _gate = new();
-    private readonly Dictionary<string, Challenge> _byAccount = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, Challenge> _byWallet = new(StringComparer.OrdinalIgnoreCase);
 
     public MarketplaceAccountLinkService(EconomyDatabase db) => _db = db;
 
@@ -22,49 +22,56 @@ public sealed class MarketplaceAccountLinkService
         if (userId <= 0 || accountName.Length is < 1 or > 64)
             throw new InvalidOperationException("Invalid TShock account identity.");
 
+        var wallet = _db.GetPlayerWallet(userId)
+            ?? throw new InvalidOperationException("Create your ARKOS wallet first with /arkos wallet create.");
+        var walletAddress = wallet.AccountRS.Trim();
+
         lock (_gate)
         {
             CleanupExpired();
-            foreach (var key in _byAccount.Where(x => x.Value.UserId == userId).Select(x => x.Key).ToArray())
-                _byAccount.Remove(key);
+            foreach (var key in _byWallet.Where(x => x.Value.UserId == userId).Select(x => x.Key).ToArray())
+                _byWallet.Remove(key);
 
             var code = RandomNumberGenerator.GetInt32(0, 1_000_000).ToString("D6");
             var salt = RandomNumberGenerator.GetBytes(16);
             var hash = Hash(code, salt);
             var expires = DateTime.UtcNow.AddMinutes(5);
-            _byAccount[accountName] = new Challenge(userId, accountName, salt, hash, expires, 0);
-            return new MarketplaceLinkChallenge(accountName, code, expires);
+            _byWallet[walletAddress] = new Challenge(userId, accountName, walletAddress, salt, hash, expires, 0);
+            return new MarketplaceLinkChallenge(accountName, walletAddress, code, expires);
         }
     }
 
-    public WebAccountLink Redeem(string accountName, string code, string webSubject)
+    public WebAccountLink Redeem(string walletAddress, string code, string webSubject)
     {
-        accountName = accountName.Trim();
+        walletAddress = walletAddress.Trim();
         code = code.Trim();
         webSubject = webSubject.Trim();
-        if (code.Length != 6 || !code.All(char.IsDigit))
-            throw new InvalidOperationException("Invalid or expired link code.");
+        if (walletAddress.Length is < 3 or > 64 || code.Length != 6 || !code.All(char.IsDigit))
+            throw new InvalidOperationException("Invalid or expired authentication code.");
 
         lock (_gate)
         {
             CleanupExpired();
-            if (!_byAccount.TryGetValue(accountName, out var challenge))
-                throw new InvalidOperationException("Invalid or expired link code.");
+            if (!_byWallet.TryGetValue(walletAddress, out var challenge))
+                throw new InvalidOperationException("Invalid or expired authentication code.");
+
+            var wallet = _db.GetPlayerWalletByAddress(walletAddress);
+            if (wallet is null || wallet.TShockUserId != challenge.UserId)
+                throw new InvalidOperationException("Invalid or expired authentication code.");
 
             var candidate = Hash(code, challenge.Salt);
             if (!CryptographicOperations.FixedTimeEquals(candidate, challenge.Hash))
             {
                 var attempts = challenge.Attempts + 1;
                 if (attempts >= 5)
-                    _byAccount.Remove(accountName);
+                    _byWallet.Remove(walletAddress);
                 else
-                    _byAccount[accountName] = challenge with { Attempts = attempts };
-                throw new InvalidOperationException("Invalid or expired link code.");
+                    _byWallet[walletAddress] = challenge with { Attempts = attempts };
+                throw new InvalidOperationException("Invalid or expired authentication code.");
             }
 
-            var link = _db.CreateOrConfirmWebAccountLink(
-                challenge.UserId, challenge.AccountName, webSubject);
-            _byAccount.Remove(accountName);
+            var link = _db.CreateOrConfirmWebAccountLink(challenge.UserId, challenge.AccountName, webSubject);
+            _byWallet.Remove(walletAddress);
             return link;
         }
     }
@@ -72,8 +79,8 @@ public sealed class MarketplaceAccountLinkService
     private void CleanupExpired()
     {
         var now = DateTime.UtcNow;
-        foreach (var key in _byAccount.Where(x => x.Value.ExpiresUtc <= now).Select(x => x.Key).ToArray())
-            _byAccount.Remove(key);
+        foreach (var key in _byWallet.Where(x => x.Value.ExpiresUtc <= now).Select(x => x.Key).ToArray())
+            _byWallet.Remove(key);
     }
 
     private static byte[] Hash(string code, byte[] salt)
