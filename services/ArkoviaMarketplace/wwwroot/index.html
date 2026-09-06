@@ -1,57 +1,14 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#142c45">
-  <title>Arkovia Marketplace — Terraria Economy</title>
-  <link rel="stylesheet" href="/styles.css?v=20260906-terraria2">
-</head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#142c45"><title>Arkovia Marketplace — Terraria Economy</title><link rel="stylesheet" href="/styles.css?v=20260906-terraria3"></head>
 <body>
-  <div class="world-backdrop" aria-hidden="true"><div class="sun"></div><div class="moon"></div><div class="stars"></div><div class="cloud cloud-one"></div><div class="cloud cloud-two"></div><div class="distant-hills"></div><div class="forest-line"></div></div>
-
-  <header class="site-header">
-    <div class="topbar">
-      <a class="brand" href="/marketplace" aria-label="Arkovia Marketplace home"><span class="brand-mark">A</span><span><small>ARKOVIA NETWORK</small><strong>Marketplace</strong></span></a>
-      <nav class="main-nav" aria-label="Marketplace navigation"><a href="#market">Market</a><a href="#inventory">Inventory</a><a href="#exchange">Exchange</a><a href="#accountPanel">My Account</a></nav>
-      <div id="sessionArea" class="session-area"></div>
-    </div>
-  </header>
-
-  <section class="stock-tape" id="exchange" aria-label="Arkovia stock market"><div class="stock-tape-label">◆ ARKOVIA EXCHANGE</div><div class="stock-tape-viewport"><div id="stockTape" class="stock-tape-track">Loading stocks…</div></div></section>
-
-  <main>
-    <section class="hero game-panel">
-      <div class="hero-copy"><span class="quest-label">WELCOME, ADVENTURER</span><h1>The Arkovia Trading Post</h1><p>Trade items, property and shares across the Arkovia economy. Every item, balance and settlement is verified by the Terraria server.</p><div class="hero-actions"><a class="game-button" href="#market">Browse the Market</a><a class="game-button secondary-link" href="#inventory">Open Inventory</a></div></div>
-      <div class="hero-side"><div class="coin-emblem">A</div><span>Realm Currency</span><strong id="currencyLabel">ARKOS</strong><small>Server-authoritative economy</small></div>
-    </section>
-
-    <section id="linkPanel" class="game-panel notice-board hidden">
-      <div class="panel-title"><span class="panel-icon">⚒</span><div><span class="eyebrow">ADVENTURER ACCESS</span><h2>Link your Terraria account</h2></div></div>
-      <p>In game, run <code>/market link</code>, then enter your Terraria account name and the 6-digit code here. The code is valid for 5 minutes.</p>
-      <form id="linkForm" class="form-row"><label>Terraria account<input id="accountInput" maxlength="64" autocomplete="username" required></label><label>6-digit code<input id="codeInput" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" required></label><button type="submit">Link Account</button></form><div id="linkMessage" class="message"></div>
-    </section>
-
-    <section id="market" class="section-head"><div><span class="eyebrow">TRADING POST</span><h2>Available Listings</h2><p>Goods currently offered by adventurers across Arkovia.</p></div><button id="refreshButton" class="secondary">↻ Refresh Market</button></section>
-    <section id="listingGrid" class="grid"></section><div id="marketMessage" class="message"></div>
-
-    <section id="accountPanel" class="hidden player-zone">
-      <div id="inventory" class="section-head"><div><span class="eyebrow">BACKPACK</span><h2>In-game Inventory</h2><p>Your character must be online. Choose an item, quantity and price to move it into secure marketplace escrow.</p></div><button id="inventoryRefresh" class="secondary">↻ Refresh Inventory</button></div>
-      <section id="inventoryGrid" class="grid"></section>
-      <div class="section-head"><div><span class="eyebrow">ARKOVIA EXCHANGE</span><h2>Your Stocks</h2><p>Your current company-share holdings.</p></div></div><section id="stockHoldingGrid" class="grid"></section>
-      <div class="section-head"><div><span class="eyebrow">TREASURE DELIVERY</span><h2>Purchased & Returned Items</h2></div><button id="claimItemsButton" class="secondary">Claim to Terraria</button></div>
-      <div class="section-head"><div><span class="eyebrow">VAULT</span><h2>Other Sellable Assets</h2></div></div><section id="assetGrid" class="grid"></section>
-      <div class="section-head"><div><span class="eyebrow">MY STALL</span><h2>Your Listings</h2></div></div><section id="myListingGrid" class="grid"></section>
-      <div class="section-head"><div><span class="eyebrow">ADVENTURE LOG</span><h2>Purchase History</h2></div></div><section id="purchaseGrid" class="grid"></section>
-    </section>
-  </main>
-
-  <footer><div><strong>ARKOVIA MARKETPLACE</strong><span>Built for the Arkovia Terraria community.</span></div><span>Trade safely. Adventure boldly.</span></footer>
-
-  <dialog id="sellDialog"><form id="sellForm" method="dialog" class="dialog-card"><button type="button" id="closeSell" class="icon-button" aria-label="Close">×</button><span class="eyebrow">CREATE LISTING</span><h2 id="sellAssetName">Sell asset</h2><input id="sellAssetId" type="hidden"><label>Price in <span id="sellCurrency">ARKOS</span><input id="sellPrice" type="text" inputmode="decimal" placeholder="25.00" required></label><button type="submit">Create Listing</button><div id="sellMessage" class="message"></div></form></dialog>
-  <dialog id="stockDialog"><form id="stockForm" method="dialog" class="dialog-card"><button type="button" id="closeStock" class="icon-button" aria-label="Close">×</button><span class="eyebrow">ARKOVIA EXCHANGE</span><h2 id="stockName">Stock</h2><div id="stockDetail" class="stock-detail"></div><input id="stockTicker" type="hidden"><label>Shares<input id="stockShares" type="number" min="1" max="1000000" value="1" required></label><button type="submit">Buy Shares</button><div id="stockMessage" class="message"></div></form></dialog>
-  <dialog id="inventorySellDialog"><form id="inventorySellForm" method="dialog" class="dialog-card"><button type="button" id="closeInventorySell" class="icon-button" aria-label="Close">×</button><span class="eyebrow">SELL FROM BACKPACK</span><h2 id="inventorySellName">Sell item</h2><input id="inventorySlot" type="hidden"><label>Quantity<input id="inventoryQuantity" type="number" min="1" required></label><label>Total price in ARKOS<input id="inventoryPrice" type="text" inputmode="decimal" required></label><button type="submit">List Item</button><div id="inventorySellMessage" class="message"></div></form></dialog>
-  <script src="/app.js?v=20260906-terraria2" defer></script>
-  <script src="/theme.js?v=20260906-terraria2" defer></script>
-</body>
-</html>
+<div class="world-backdrop" aria-hidden="true"><div class="sun"></div><div class="moon"></div><div class="stars"></div><div class="cloud cloud-one"></div><div class="cloud cloud-two"></div><div class="distant-hills"></div><div class="forest-line"></div></div>
+<header class="site-header"><div class="topbar"><a class="brand" href="/marketplace" aria-label="Arkovia Marketplace home"><span class="brand-mark">A</span><span><small>ARKOVIA NETWORK</small><strong>Marketplace</strong></span></a><nav class="main-nav" aria-label="Marketplace navigation"><a href="#market">Market</a><a href="#inventory">Inventory</a><a href="#exchange">Exchange</a><a href="#accountPanel">My Account</a></nav><div id="sessionArea" class="session-area"></div></div></header>
+<section class="stock-tape" id="exchange" aria-label="Arkovia stock market"><div class="stock-tape-label">◆ ARKOVIA EXCHANGE</div><div class="stock-tape-viewport"><div id="stockTape" class="stock-tape-track">Loading stocks…</div></div></section>
+<main><section class="hero game-panel"><div class="hero-copy"><span class="quest-label">WELCOME, ADVENTURER</span><h1>The Arkovia Trading Post</h1><p>Trade items, property and shares across the Arkovia economy. Every item, balance and settlement is verified by the Terraria server.</p><div class="hero-actions"><a class="game-button" href="#market">Browse the Market</a><a class="game-button secondary-link" href="#inventory">Open Inventory</a></div></div><div class="hero-side"><div class="coin-emblem">A</div><span>Realm Currency</span><strong id="currencyLabel">ARKOS</strong><small>Server-authoritative economy</small></div></section>
+<section id="linkPanel" class="game-panel notice-board hidden"><div class="panel-title"><span class="panel-icon">⚒</span><div><span class="eyebrow">ADVENTURER ACCESS</span><h2>Link your Terraria account</h2></div></div><p>In game, run <code>/market link</code>, then enter your Terraria account name and the 6-digit code here. The code is valid for 5 minutes.</p><form id="linkForm" class="form-row"><label>Terraria account<input id="accountInput" maxlength="64" autocomplete="username" required></label><label>6-digit code<input id="codeInput" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" required></label><button type="submit">Link Account</button></form><div id="linkMessage" class="message"></div></section>
+<section id="market" class="section-head"><div><span class="eyebrow">TRADING POST</span><h2>Available Listings</h2><p>Goods currently offered by adventurers across Arkovia.</p></div><button id="refreshButton" class="secondary">↻ Refresh Market</button></section><section id="listingGrid" class="grid"></section><div id="marketMessage" class="message"></div>
+<section id="accountPanel" class="hidden player-zone"><div id="inventory" class="section-head"><div><span class="eyebrow">BACKPACK</span><h2>In-game Inventory</h2><p>Your character must be online. Choose an item, quantity and price to move it into secure marketplace escrow.</p></div><button id="inventoryRefresh" class="secondary">↻ Refresh Inventory</button></div><section id="inventoryGrid" class="grid"></section><div class="section-head"><div><span class="eyebrow">ARKOVIA EXCHANGE</span><h2>Your Stocks</h2></div></div><section id="stockHoldingGrid" class="grid"></section><div class="section-head"><div><span class="eyebrow">TREASURE DELIVERY</span><h2>Purchased & Returned Items</h2></div><button id="claimItemsButton" class="secondary">Claim to Terraria</button></div><div class="section-head"><div><span class="eyebrow">VAULT</span><h2>Other Sellable Assets</h2></div></div><section id="assetGrid" class="grid"></section><div class="section-head"><div><span class="eyebrow">MY STALL</span><h2>Your Listings</h2></div></div><section id="myListingGrid" class="grid"></section><div class="section-head"><div><span class="eyebrow">ADVENTURE LOG</span><h2>Purchase History</h2></div></div><section id="purchaseGrid" class="grid"></section></section></main>
+<footer><div><strong>ARKOVIA MARKETPLACE</strong><span>Built for the Arkovia Terraria community.</span></div><span>Trade safely. Adventure boldly.</span></footer>
+<dialog id="sellDialog"><form id="sellForm" method="dialog" class="dialog-card"><button type="button" id="closeSell" class="icon-button" aria-label="Close">×</button><span class="eyebrow">CREATE LISTING</span><h2 id="sellAssetName">Sell asset</h2><input id="sellAssetId" type="hidden"><label>Price in <span id="sellCurrency">ARKOS</span><input id="sellPrice" type="text" inputmode="decimal" placeholder="25.00" required></label><button type="submit">Create Listing</button><div id="sellMessage" class="message"></div></form></dialog><dialog id="stockDialog"><form id="stockForm" method="dialog" class="dialog-card"><button type="button" id="closeStock" class="icon-button" aria-label="Close">×</button><span class="eyebrow">ARKOVIA EXCHANGE</span><h2 id="stockName">Stock</h2><div id="stockDetail" class="stock-detail"></div><input id="stockTicker" type="hidden"><label>Shares<input id="stockShares" type="number" min="1" max="1000000" value="1" required></label><button type="submit">Buy Shares</button><div id="stockMessage" class="message"></div></form></dialog><dialog id="inventorySellDialog"><form id="inventorySellForm" method="dialog" class="dialog-card"><button type="button" id="closeInventorySell" class="icon-button" aria-label="Close">×</button><span class="eyebrow">SELL FROM BACKPACK</span><h2 id="inventorySellName">Sell item</h2><input id="inventorySlot" type="hidden"><label>Quantity<input id="inventoryQuantity" type="number" min="1" required></label><label>Total price in ARKOS<input id="inventoryPrice" type="text" inputmode="decimal" required></label><button type="submit">List Item</button><div id="inventorySellMessage" class="message"></div></form></dialog>
+<script src="/app.js?v=20260906-terraria3" defer></script><script src="/theme.js?v=20260906-terraria3" defer></script></body></html>
