@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#142c45">
   <title>Arkovia Marketplace — Terraria Economy</title>
-  <link rel="stylesheet" href="/styles.css?v=20260906-terraria1">
+  <link rel="stylesheet" href="/styles.css?v=20260906-terraria2">
 </head>
 <body>
-  <div class="world-backdrop" aria-hidden="true"><div class="sun"></div><div class="cloud cloud-one"></div><div class="cloud cloud-two"></div><div class="distant-hills"></div><div class="forest-line"></div></div>
+  <div class="world-backdrop" aria-hidden="true"><div class="sun"></div><div class="moon"></div><div class="stars"></div><div class="cloud cloud-one"></div><div class="cloud cloud-two"></div><div class="distant-hills"></div><div class="forest-line"></div></div>
 
   <header class="site-header">
     <div class="topbar">
@@ -51,6 +51,7 @@
   <dialog id="sellDialog"><form id="sellForm" method="dialog" class="dialog-card"><button type="button" id="closeSell" class="icon-button" aria-label="Close">×</button><span class="eyebrow">CREATE LISTING</span><h2 id="sellAssetName">Sell asset</h2><input id="sellAssetId" type="hidden"><label>Price in <span id="sellCurrency">ARKOS</span><input id="sellPrice" type="text" inputmode="decimal" placeholder="25.00" required></label><button type="submit">Create Listing</button><div id="sellMessage" class="message"></div></form></dialog>
   <dialog id="stockDialog"><form id="stockForm" method="dialog" class="dialog-card"><button type="button" id="closeStock" class="icon-button" aria-label="Close">×</button><span class="eyebrow">ARKOVIA EXCHANGE</span><h2 id="stockName">Stock</h2><div id="stockDetail" class="stock-detail"></div><input id="stockTicker" type="hidden"><label>Shares<input id="stockShares" type="number" min="1" max="1000000" value="1" required></label><button type="submit">Buy Shares</button><div id="stockMessage" class="message"></div></form></dialog>
   <dialog id="inventorySellDialog"><form id="inventorySellForm" method="dialog" class="dialog-card"><button type="button" id="closeInventorySell" class="icon-button" aria-label="Close">×</button><span class="eyebrow">SELL FROM BACKPACK</span><h2 id="inventorySellName">Sell item</h2><input id="inventorySlot" type="hidden"><label>Quantity<input id="inventoryQuantity" type="number" min="1" required></label><label>Total price in ARKOS<input id="inventoryPrice" type="text" inputmode="decimal" required></label><button type="submit">List Item</button><div id="inventorySellMessage" class="message"></div></form></dialog>
-  <script src="/app.js?v=20260906-terraria1" defer></script>
+  <script src="/app.js?v=20260906-terraria2" defer></script>
+  <script src="/theme.js?v=20260906-terraria2" defer></script>
 </body>
 </html>
