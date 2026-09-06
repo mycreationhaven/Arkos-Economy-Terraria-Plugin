@@ -23,7 +23,11 @@ public sealed class ArkoviaCrossplayPlugin : TerrariaPlugin
 
     public ArkoviaCrossplayPlugin(Main game) : base(game)
     {
-        Order = -1000;
+        // TShock's static services (SavePath, logging, commands) must be
+        // initialized before this plugin uses them. Packet hook priority,
+        // not plugin initialization order, ensures ConnectRequest is handled
+        // before the normal version check.
+        Order = 1000;
     }
 
     public override void Initialize()
