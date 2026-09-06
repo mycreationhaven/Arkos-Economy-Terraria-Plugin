@@ -1,4 +1,4 @@
-name: Publish v1.5.0-rc.1
+name: Refresh v1.5.0-rc.1
 
 on:
   push:
@@ -17,8 +17,10 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '9.0.x'
-      - name: Build plugin
+      - name: Build economy plugin
         run: dotnet build -c Release
+      - name: Build crossplay companion
+        run: dotnet build crossplay/ArkoviaCrossplay/ArkoviaCrossplay.csproj -c Release
       - name: Run settlement and regression tests
         run: dotnet run --project tests/ArkoviaEconomy.Tests.csproj -c Release
       - name: Run marketplace web smoke tests
@@ -29,15 +31,21 @@ jobs:
         run: |
           mkdir -p release-dist
           cp bin/Release/net9.0/ArkoviaEconomy.dll release-dist/ArkoviaEconomy.dll
+          cp crossplay/ArkoviaCrossplay/bin/Release/net9.0/ArkoviaCrossplay.dll release-dist/ArkoviaCrossplay.dll
           (cd release-dist && sha256sum ArkoviaEconomy.dll > ArkoviaEconomy.dll.sha256)
-      - name: Create v1.5.0-rc.1 release
+          (cd release-dist && sha256sum ArkoviaCrossplay.dll > ArkoviaCrossplay.dll.sha256)
+      - name: Refresh existing GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create v1.5.0-rc.1 \
+          gh release upload v1.5.0-rc.1 \
             release-dist/ArkoviaEconomy.dll \
             release-dist/ArkoviaEconomy.dll.sha256 \
+            release-dist/ArkoviaCrossplay.dll \
+            release-dist/ArkoviaCrossplay.dll.sha256 \
+            --clobber
+          gh release edit v1.5.0-rc.1 \
             --target "$GITHUB_SHA" \
-            --title 'Arkovia Economy v1.5.0-rc.1 — Marketplace, Inventory, Towns & Stocks' \
-            --notes 'Major platform release since v1.4.0-rc.1: atomic economy settlement hardening; stable transferable assets; towns, governance, claims and property; marketplace escrow and town-property settlement; secure web marketplace sessions and account linking; six-digit five-minute re-authentication codes; live online Terraria inventory viewing and website item listing; item escrow and claim delivery; player web profiles; stock quotes, holdings and primary purchases; clickable scrolling ARKOVIA EXCHANGE marquee; /stocks and /stock commands; marketplace /market alias; REST route fixes and production deployment hardening. Includes ArkoviaEconomy.dll and its SHA-256 checksum.' \
+            --title 'Arkovia Economy v1.5.0-rc.1 — Marketplace, Towns, Stocks & Crossplay' \
+            --notes 'Updated v1.5.0 release candidate. Includes the latest ArkoviaEconomy.dll plus the separate ArkoviaCrossplay.dll companion. Major features include atomic economy settlement, stable transferable assets, towns/governance/claims/property, marketplace escrow and property settlement, secure linked web marketplace sessions, live Terraria inventory listing and item escrow/claim delivery, player profiles, stock quotes/holdings/primary purchases, item artwork proxying, voting rewards, and production deployment hardening. Crossplay companion: TShock 6.1/.NET 9 handshake compatibility for explicitly approved Terraria 1.4.5.x PC/mobile protocols Terraria311 through Terraria319. The live server reports Terraria 1.4.5.8 / Terraria319. Mobile compatibility is deployed but remains subject to real-device gameplay validation. The crossplay bridge does not by itself provide Xbox, PlayStation, or Nintendo Switch networking/custom-IP connectivity. Both DLLs and SHA-256 checksum files are attached.' \
             --prerelease
