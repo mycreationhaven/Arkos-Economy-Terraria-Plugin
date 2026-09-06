@@ -15,40 +15,23 @@ public sealed class MarketplaceCommands
     private readonly EconomyDatabase _db;
     private readonly ConfigManager _config;
 
-    public MarketplaceCommands(
-        MarketplaceService market,
-        MarketplaceAccountLinkService links,
-        TownService towns,
-        EconomyDatabase db,
-        ConfigManager config)
-    {
-        _market = market;
-        _links = links;
-        _towns = towns;
-        _db = db;
-        _config = config;
-    }
+    public MarketplaceCommands(MarketplaceService market, MarketplaceAccountLinkService links, TownService towns, EconomyDatabase db, ConfigManager config)
+    { _market = market; _links = links; _towns = towns; _db = db; _config = config; }
 
     public IEnumerable<Command> Build()
     {
-        yield return new Command(Permissions.Market, Market, "market")
-        {
-            AllowServer = false,
-            HelpText = "/market listings|info|sellproperty|buy|cancel|link"
-        };
+        yield return new Command(Permissions.Market, Market, "market") { AllowServer = false, HelpText = "/market listings|info|sellproperty|buy|cancel|auth" };
     }
 
     private static (int Id, string Name) RequireIdentity(CommandArgs args)
     {
-        if (!args.Player.RealPlayer || !args.Player.IsLoggedIn || args.Player.Account is null)
-            throw new InvalidOperationException("You must be logged into a TShock account.");
+        if (!args.Player.RealPlayer || !args.Player.IsLoggedIn || args.Player.Account is null) throw new InvalidOperationException("You must be logged into a TShock account.");
         return (args.Player.Account.ID, args.Player.Account.Name);
     }
 
     private long ParseAmount(string text)
     {
-        if (!decimal.TryParse(text, NumberStyles.Number, CultureInfo.InvariantCulture, out var amount) || amount <= 0)
-            throw new InvalidOperationException("Enter a positive price.");
+        if (!decimal.TryParse(text, NumberStyles.Number, CultureInfo.InvariantCulture, out var amount) || amount <= 0) throw new InvalidOperationException("Enter a positive price.");
         return _config.Current.ToAtomic(amount);
     }
 
@@ -56,107 +39,65 @@ public sealed class MarketplaceCommands
     {
         try
         {
-            var identity = RequireIdentity(args);
-            _market.CleanupExpiredReservations();
-            if (args.Parameters.Count == 0)
-            {
-                Help(args);
-                return;
-            }
-
+            var identity = RequireIdentity(args); _market.CleanupExpiredReservations();
+            if (args.Parameters.Count == 0) { Help(args); return; }
             switch (args.Parameters[0].ToLowerInvariant())
             {
-                case "link":
-                case "weblink":
+                case "auth": case "login": case "link": case "weblink":
                 {
-                    var existing = _db.GetWebAccountLinkByUser(identity.Id);
                     var challenge = _links.Issue(identity.Id, identity.Name);
-                    args.Player.SendSuccessMessage($"Marketplace link code: {challenge.Code}");
-                    args.Player.SendInfoMessage(existing is null
-                        ? "Enter this code on the Arkovia marketplace. It expires in 5 minutes and can be used once."
-                        : "Your marketplace account is already linked. Use this fresh code to sign in again. It expires in 5 minutes and can be used once.");
+                    args.Player.SendSuccessMessage($"Marketplace auth code: {challenge.Code}");
+                    args.Player.SendInfoMessage($"ARKOS wallet: {challenge.WalletAddress}");
+                    args.Player.SendInfoMessage("Enter your wallet address and this code on the Arkovia Marketplace. It expires in 5 minutes and can be used once.");
                     break;
                 }
-                case "listings":
-                case "list":
+                case "listings": case "list":
                 {
                     var listings = _db.GetMarketplaceListings("active", 20);
-                    if (listings.Count == 0)
-                    {
-                        args.Player.SendInfoMessage("There are no active Arkovia marketplace listings.");
-                        break;
-                    }
+                    if (listings.Count == 0) { args.Player.SendInfoMessage("There are no active Arkovia marketplace listings."); break; }
                     foreach (var listing in listings)
-                    {
-                        var asset = _db.GetAsset(listing.AssetId);
-                        var label = asset is null ? listing.AssetId : $"{asset.Name} ({asset.AssetType})";
-                        args.Player.SendInfoMessage($"{listing.ListingId} | {label} | {_config.Current.Format(listing.PriceAtomic)}");
-                    }
+                    { var asset = _db.GetAsset(listing.AssetId); var label = asset is null ? listing.AssetId : $"{asset.Name} ({asset.AssetType})"; args.Player.SendInfoMessage($"{listing.ListingId} | {label} | {_config.Current.Format(listing.PriceAtomic)}"); }
                     break;
                 }
                 case "info":
                 {
-                    if (args.Parameters.Count != 2)
-                        throw new InvalidOperationException("Usage: /market info <listing ID>");
-                    var listing = _db.GetMarketplaceListing(args.Parameters[1])
-                        ?? throw new InvalidOperationException("Listing was not found.");
-                    var asset = _db.GetAsset(listing.AssetId)
-                        ?? throw new InvalidOperationException("Listing asset was not found.");
+                    if (args.Parameters.Count != 2) throw new InvalidOperationException("Usage: /market info <listing ID>");
+                    var listing = _db.GetMarketplaceListing(args.Parameters[1]) ?? throw new InvalidOperationException("Listing was not found.");
+                    var asset = _db.GetAsset(listing.AssetId) ?? throw new InvalidOperationException("Listing asset was not found.");
                     args.Player.SendInfoMessage($"{listing.ListingId} | {asset.Name} ({asset.AssetType}) | {_config.Current.Format(listing.PriceAtomic)} | {listing.Status}");
-                    args.Player.SendInfoMessage($"Asset: {asset.AssetId} | seller: {listing.SellerOwnerType}:{listing.SellerOwnerId}");
-                    break;
+                    args.Player.SendInfoMessage($"Asset: {asset.AssetId} | seller: {listing.SellerOwnerType}:{listing.SellerOwnerId}"); break;
                 }
-                case "sellproperty":
-                case "sell-property":
+                case "sellproperty": case "sell-property":
                 {
-                    if (args.Parameters.Count < 3)
-                        throw new InvalidOperationException("Usage: /market sellproperty <TShock region name> <price>");
-                    var price = ParseAmount(args.Parameters[^1]);
-                    var regionName = string.Join(" ", args.Parameters.Skip(1).Take(args.Parameters.Count - 2));
-                    var town = _towns.RequireTownForUser(identity.Id);
-                    _towns.RequireMayor(town, identity.Id);
-                    var property = _db.GetPropertyByRegion(Main.worldID.ToString(), regionName)
-                        ?? throw new InvalidOperationException("No active Arkovia property is bound to that region.");
-                    if (property.TownId != town.TownId)
-                        throw new InvalidOperationException("That property does not belong to your town.");
+                    if (args.Parameters.Count < 3) throw new InvalidOperationException("Usage: /market sellproperty <TShock region name> <price>");
+                    var price = ParseAmount(args.Parameters[^1]); var regionName = string.Join(" ", args.Parameters.Skip(1).Take(args.Parameters.Count - 2));
+                    var town = _towns.RequireTownForUser(identity.Id); _towns.RequireMayor(town, identity.Id);
+                    var property = _db.GetPropertyByRegion(Main.worldID.ToString(), regionName) ?? throw new InvalidOperationException("No active Arkovia property is bound to that region.");
+                    if (property.TownId != town.TownId) throw new InvalidOperationException("That property does not belong to your town.");
                     var listing = _market.ListTownProperty(town, identity.Id, property.AssetId, price, _towns);
-                    args.Player.SendSuccessMessage($"Listed {property.RegionName} for {_config.Current.Format(price)}.");
-                    args.Player.SendInfoMessage($"Listing ID: {listing.ListingId}");
-                    break;
+                    args.Player.SendSuccessMessage($"Listed {property.RegionName} for {_config.Current.Format(price)}."); args.Player.SendInfoMessage($"Listing ID: {listing.ListingId}"); break;
                 }
-                case "buy":
-                case "buynow":
+                case "buy": case "buynow":
                 {
-                    if (args.Parameters.Count != 2)
-                        throw new InvalidOperationException("Usage: /market buy <listing ID>");
+                    if (args.Parameters.Count != 2) throw new InvalidOperationException("Usage: /market buy <listing ID>");
                     var operationKey = $"market-buy:{identity.Id}:{args.Parameters[1]}:{Guid.NewGuid():N}";
                     var sale = _market.BuyNowForPlayer(args.Parameters[1], identity.Id, identity.Name, operationKey);
-                    args.Player.SendSuccessMessage($"Purchase completed for {_config.Current.Format(sale.AmountAtomic)}.");
-                    args.Player.SendInfoMessage($"Sale ID: {sale.SaleId} | Asset: {sale.AssetId}");
-                    break;
+                    args.Player.SendSuccessMessage($"Purchase completed for {_config.Current.Format(sale.AmountAtomic)}."); args.Player.SendInfoMessage($"Sale ID: {sale.SaleId} | Asset: {sale.AssetId}"); break;
                 }
                 case "cancel":
                 {
-                    if (args.Parameters.Count != 2)
-                        throw new InvalidOperationException("Usage: /market cancel <listing ID>");
-                    _market.CancelListing(args.Parameters[1], identity.Id, _towns);
-                    args.Player.SendSuccessMessage("Marketplace listing cancelled and asset unlocked.");
-                    break;
+                    if (args.Parameters.Count != 2) throw new InvalidOperationException("Usage: /market cancel <listing ID>");
+                    _market.CancelListing(args.Parameters[1], identity.Id, _towns); args.Player.SendSuccessMessage("Marketplace listing cancelled and asset unlocked."); break;
                 }
-                default:
-                    Help(args);
-                    break;
+                default: Help(args); break;
             }
         }
-        catch (Exception ex)
-        {
-            args.Player.SendErrorMessage(ex.Message);
-        }
+        catch (Exception ex) { args.Player.SendErrorMessage(ex.Message); }
     }
 
     private static void Help(CommandArgs args)
     {
-        args.Player.SendInfoMessage("/market listings | /market info <listing ID> | /market buy <listing ID> | /market link");
+        args.Player.SendInfoMessage("/market listings | /market info <listing ID> | /market buy <listing ID> | /market auth");
         args.Player.SendInfoMessage("/market sellproperty <region> <price> | /market cancel <listing ID>");
     }
 }
