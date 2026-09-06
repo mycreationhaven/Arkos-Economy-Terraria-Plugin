@@ -1,85 +1,15 @@
 (()=>{
-  const categories=[
-    ['all','All'],['weapons','Weapons'],['armor','Armor'],['potions','Potions'],['materials','Materials'],['building','Building'],['tools','Tools'],['other','Other']
-  ];
-
-  const categoryFor=name=>{
-    const n=String(name||'').toLowerCase();
-    if(/sword|bow|gun|staff|wand|spear|flail|yoyo|boomerang|whip|knife|blade|launcher|cannon|musket|pistol|rifle/.test(n))return'weapons';
-    if(/helmet|mask|hood|breastplate|plate|greaves|armor|robe|hat|shirt|pants/.test(n))return'armor';
-    if(/potion|flask|elixir|food|ale|soup|pie|fish dinner/.test(n))return'potions';
-    if(/ore|bar|gel|lens|bone|silk|leather|feather|soul|crystal|fragment|scale|tissue|sample|wood|stone|sand|dirt|mud|clay/.test(n))return'materials';
-    if(/wall|block|brick|platform|door|chair|table|work bench|workbench|torch|lantern|lamp|fence|beam|paint|wire/.test(n))return'building';
-    if(/pickaxe|drill|axe|hammer|wrench|rod|bucket|mirror|hook/.test(n))return'tools';
-    return'other';
-  };
-
-  function decorateGrid(grid){
-    if(!grid)return;
-    grid.querySelectorAll('.card').forEach(card=>{
-      const title=card.querySelector('h3')?.textContent||'';
-      card.dataset.category=categoryFor(title);
-      if(!card.querySelector('.rarity-rune')){
-        const rune=document.createElement('span');
-        rune.className='rarity-rune';
-        rune.setAttribute('aria-hidden','true');
-        rune.textContent='◆';
-        card.prepend(rune);
-      }
-    });
-  }
-
-  function makeToolbar(id,targetId,placeholder){
-    const target=document.getElementById(targetId);
-    if(!target||document.getElementById(id))return;
-    const bar=document.createElement('div');
-    bar.id=id;bar.className='market-toolbar game-panel compact-panel';
-    bar.innerHTML=`<div class="category-tabs">${categories.map(([v,l])=>`<button type="button" class="category-tab${v==='all'?' active':''}" data-category="${v}">${l}</button>`).join('')}</div><label class="market-search"><span>Search</span><input type="search" placeholder="${placeholder}" autocomplete="off"></label>`;
-    target.before(bar);
-    let active='all';
-    const apply=()=>{
-      decorateGrid(target);
-      const q=bar.querySelector('input').value.trim().toLowerCase();
-      target.querySelectorAll('.card').forEach(card=>{
-        const cat=card.dataset.category||'other';
-        const text=card.textContent.toLowerCase();
-        card.hidden=!((active==='all'||cat===active)&&(!q||text.includes(q)));
-      });
-    };
-    bar.querySelectorAll('.category-tab').forEach(btn=>btn.addEventListener('click',()=>{
-      active=btn.dataset.category;
-      bar.querySelectorAll('.category-tab').forEach(x=>x.classList.toggle('active',x===btn));
-      apply();
-    }));
-    bar.querySelector('input').addEventListener('input',apply);
-    new MutationObserver(apply).observe(target,{childList:true,subtree:false});
-    apply();
-  }
-
-  function ambientToggle(){
-    const header=document.querySelector('.topbar');if(!header||document.getElementById('ambientToggle'))return;
-    const b=document.createElement('button');b.id='ambientToggle';b.className='ambient-toggle secondary';b.type='button';b.title='Toggle day / night ambience';b.textContent='☀ Day';
-    const saved=localStorage.getItem('arkovia-theme-time');
-    if(saved==='night'){document.body.classList.add('night-mode');b.textContent='☾ Night';}
-    b.addEventListener('click',()=>{
-      const night=document.body.classList.toggle('night-mode');
-      b.textContent=night?'☾ Night':'☀ Day';
-      localStorage.setItem('arkovia-theme-time',night?'night':'day');
-    });
-    header.appendChild(b);
-  }
-
-  function addWorldStatus(){
-    const hero=document.querySelector('.hero-side');if(!hero||hero.querySelector('.world-status'))return;
-    const box=document.createElement('div');box.className='world-status';box.innerHTML='<span class="status-dot"></span><span>Arkovia Trading Post</span><strong>ONLINE</strong>';
-    hero.appendChild(box);
-  }
-
-  function init(){
-    makeToolbar('marketToolbar','listingGrid','Search marketplace…');
-    makeToolbar('inventoryToolbar','inventoryGrid','Search backpack…');
-    ambientToggle();addWorldStatus();
-    ['listingGrid','inventoryGrid','assetGrid','myListingGrid','purchaseGrid','stockHoldingGrid'].forEach(id=>decorateGrid(document.getElementById(id)));
-  }
+  const categories=[['all','All'],['weapons','Weapons'],['armor','Armor'],['potions','Potions'],['materials','Materials'],['building','Building'],['tools','Tools'],['other','Other']];
+  const categoryMeta={weapons:['⚔','Armory','Dangerous goods for dangerous adventures.'],armor:['⛨','Armorer','Gear up before the next boss fight.'],potions:['⚗','Alchemist','Potions, food and adventuring supplies.'],materials:['◆','Mines','Ore, bars and crafting ingredients.'],building:['⌂','Builder','Blocks, walls, lights and furnishings.'],tools:['⚒','Workshop','Tools that keep the world moving.'],other:['✦','Curios','Everything unusual, rare or hard to classify.']};
+  const categoryFor=name=>{const n=String(name||'').toLowerCase();if(/sword|bow|gun|staff|wand|spear|flail|yoyo|boomerang|whip|knife|blade|launcher|cannon|musket|pistol|rifle/.test(n))return'weapons';if(/helmet|mask|hood|breastplate|plate|greaves|armor|robe|hat|shirt|pants/.test(n))return'armor';if(/potion|flask|elixir|food|ale|soup|pie|fish dinner/.test(n))return'potions';if(/ore|bar|gel|lens|bone|silk|leather|feather|soul|crystal|fragment|scale|tissue|sample|wood|stone|sand|dirt|mud|clay/.test(n))return'materials';if(/wall|block|brick|platform|door|chair|table|work bench|workbench|torch|lantern|lamp|fence|beam|paint|wire/.test(n))return'building';if(/pickaxe|drill|axe|hammer|wrench|rod|bucket|mirror|hook/.test(n))return'tools';return'other';};
+  const rarityFor=(name,meta)=>{const t=`${name} ${meta}`.toLowerCase();if(/legendary|zenith|terrarian|meowmere|star wrath|last prism|celebration/.test(t))return'legendary';if(/chlorophyte|spectre|shroomite|beetle|lunar|solar|vortex|nebula|stardust|fragment/.test(t))return'epic';if(/hallowed|adamantite|titanium|crystal|ichor|cursed|soul/.test(t))return'rare';if(/demonite|crimtane|meteor|hellstone|obsidian/.test(t))return'uncommon';return'common';};
+  function decorateGrid(grid){if(!grid)return;grid.querySelectorAll('.card').forEach(card=>{const title=card.querySelector('h3')?.textContent||'';const meta=card.querySelector('.meta')?.textContent||'';card.dataset.category=categoryFor(title);card.dataset.rarity=rarityFor(title,meta);if(!card.querySelector('.rarity-rune')){const rune=document.createElement('span');rune.className='rarity-rune';rune.setAttribute('aria-hidden','true');rune.textContent='◆';card.prepend(rune);}if(!card.querySelector('.rarity-label')){const badge=document.createElement('span');badge.className='rarity-label';badge.textContent=card.dataset.rarity;card.appendChild(badge);}});}
+  function makeToolbar(id,targetId,placeholder){const target=document.getElementById(targetId);if(!target||document.getElementById(id))return;const bar=document.createElement('div');bar.id=id;bar.className='market-toolbar game-panel compact-panel';bar.innerHTML=`<div class="category-tabs">${categories.map(([v,l])=>`<button type="button" class="category-tab${v==='all'?' active':''}" data-category="${v}">${l}</button>`).join('')}</div><label class="market-search"><span>Search</span><input type="search" placeholder="${placeholder}" autocomplete="off"></label>`;target.before(bar);let active='all';const apply=()=>{decorateGrid(target);const q=bar.querySelector('input').value.trim().toLowerCase();target.querySelectorAll('.card').forEach(card=>{const cat=card.dataset.category||'other';card.hidden=!((active==='all'||cat===active)&&(!q||card.textContent.toLowerCase().includes(q)));});};bar.querySelectorAll('.category-tab').forEach(btn=>btn.addEventListener('click',()=>{active=btn.dataset.category;bar.querySelectorAll('.category-tab').forEach(x=>x.classList.toggle('active',x===btn));apply();}));bar.querySelector('input').addEventListener('input',apply);new MutationObserver(apply).observe(target,{childList:true,subtree:false});apply();}
+  function addBiomeShops(){const market=document.getElementById('market');if(!market||document.getElementById('biomeShops'))return;const s=document.createElement('section');s.id='biomeShops';s.className='biome-shops';s.innerHTML='<div class="biome-title"><span class="eyebrow">EXPLORE THE MARKET</span><h2>Merchant District</h2><p>Jump straight to the kind of loot you are hunting.</p></div><div class="biome-grid">'+Object.entries(categoryMeta).map(([key,[icon,title,copy]])=>`<button class="biome-card biome-${key}" data-shop="${key}"><span class="biome-icon">${icon}</span><strong>${title}</strong><small>${copy}</small></button>`).join('')+'</div>';market.before(s);s.querySelectorAll('.biome-card').forEach(b=>b.addEventListener('click',()=>{document.querySelector(`#marketToolbar [data-category="${b.dataset.shop}"]`)?.click();market.scrollIntoView({behavior:'smooth'});}));}
+  function addMerchantGuide(){const market=document.getElementById('market');if(!market||document.getElementById('merchantGuide'))return;const g=document.createElement('aside');g.id='merchantGuide';g.className='merchant-guide game-panel';g.innerHTML='<div class="merchant-portrait" aria-hidden="true"><span>☺</span></div><div><span class="eyebrow">THE MARKET GUIDE</span><h3>Welcome to the Trading Post!</h3><p>Browse adventurer listings, inspect your backpack, and move goods into server-secured escrow. Your ARKOS and items stay authoritative in Arkovia — not in the browser.</p></div><div class="merchant-tips"><span>⚔ Buy player goods</span><span>⚒ Sell from your live backpack</span><span>◆ Trade company shares</span></div>';market.after(g);}
+  function addDashboard(){const panel=document.getElementById('accountPanel');if(!panel||document.getElementById('adventurerDashboard'))return;const d=document.createElement('section');d.id='adventurerDashboard';d.className='adventurer-dashboard game-panel';d.innerHTML='<div class="avatar-frame"><div class="avatar-silhouette">♟</div><span>LINKED ADVENTURER</span></div><div class="dashboard-copy"><span class="eyebrow">PLAYER COMMAND CENTER</span><h2>Adventurer Dashboard</h2><p>Your marketplace activity, backpack and holdings in one place.</p></div><div class="dashboard-stats"><div><strong id="dashInventory">—</strong><span>Backpack stacks</span></div><div><strong id="dashListings">—</strong><span>Listings</span></div><div><strong id="dashStocks">—</strong><span>Stock holdings</span></div></div>';panel.prepend(d);const update=()=>{document.getElementById('dashInventory').textContent=document.querySelectorAll('#inventoryGrid .card').length;document.getElementById('dashListings').textContent=document.querySelectorAll('#myListingGrid .card').length;document.getElementById('dashStocks').textContent=document.querySelectorAll('#stockHoldingGrid .card').length;};['inventoryGrid','myListingGrid','stockHoldingGrid'].forEach(id=>{const x=document.getElementById(id);if(x)new MutationObserver(update).observe(x,{childList:true});});update();}
+  function ambientToggle(){const header=document.querySelector('.topbar');if(!header||document.getElementById('ambientToggle'))return;const b=document.createElement('button');b.id='ambientToggle';b.className='ambient-toggle secondary';b.type='button';b.title='Toggle day / night ambience';b.textContent='☀ Day';const saved=localStorage.getItem('arkovia-theme-time');if(saved==='night'){document.body.classList.add('night-mode');b.textContent='☾ Night';}b.addEventListener('click',()=>{const night=document.body.classList.toggle('night-mode');b.textContent=night?'☾ Night':'☀ Day';localStorage.setItem('arkovia-theme-time',night?'night':'day');});header.appendChild(b);}
+  function addWorldStatus(){const hero=document.querySelector('.hero-side');if(!hero||hero.querySelector('.world-status'))return;const box=document.createElement('div');box.className='world-status';box.innerHTML='<span class="status-dot"></span><span>Arkovia Trading Post</span><strong>ONLINE</strong>';hero.appendChild(box);}
+  function init(){makeToolbar('marketToolbar','listingGrid','Search marketplace…');makeToolbar('inventoryToolbar','inventoryGrid','Search backpack…');ambientToggle();addWorldStatus();addBiomeShops();addMerchantGuide();addDashboard();['listingGrid','inventoryGrid','assetGrid','myListingGrid','purchaseGrid','stockHoldingGrid'].forEach(id=>decorateGrid(document.getElementById(id)));}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
