@@ -1,41 +1,112 @@
-# Compiled Plugin
+# Release Artifacts
 
-`ArkoviaEconomy.dll` is the compiled **v1.4.0-rc.2** TShock plugin included with this repository. It contains the configurable Terraria-Servers.com and TServerWeb voting-reward integration and the required TServerWeb client-identification correction documented in [`docs/VOTING.md`](../docs/VOTING.md).
+This directory documents the current Arkovia Terraria/TShock release artifacts.
 
-Build details:
+## Current release line
 
-- Plugin version: `1.4.0-rc.2`
-- Target framework: `.NET 9.0`
-- TShock package target: `6.1.0`
-- SHA-256: `b0558229197864b6852f4855ac7eda119462250c096725e2ad5050f59285f539`
+- Release: `v1.5.0-rc.1`
+- Main plugin: `ArkoviaEconomy.dll`
+- Companion crossplay plugin: `ArkoviaCrossplay.dll`
+- Target runtime: `.NET 9`
+- Target server stack: TShock 6.1 / Terraria 1.4.5.x
 
-## Installation
-
-Copy:
-
-```text
-release/ArkoviaEconomy.dll
-```
-
-into your TShock server:
+The published GitHub `v1.5.0-rc.1` release currently contains the main `ArkoviaEconomy.dll` and checksum. The crossplay companion was added after that release and is built from:
 
 ```text
-ServerPlugins/ArkoviaEconomy.dll
+crossplay/ArkoviaCrossplay/
 ```
 
-Then restart TShock.
+Until a newer GitHub release includes both DLLs, build `ArkoviaCrossplay.dll` from source or use the validated server build for deployment.
 
-The source code used to build the DLL is included in this repository.
+## ArkoviaEconomy.dll
 
-## Build from source
+Version 1.5 includes the current marketplace, towns/property, live inventory, item escrow, stocks/holdings, voting, progression, atomic settlement and secure web integration work.
+
+Build from source:
 
 ```bash
 dotnet restore
 dotnet build -c Release
 ```
 
-Normal build output:
+Normal output:
 
 ```text
 bin/Release/net9.0/ArkoviaEconomy.dll
 ```
+
+Install to:
+
+```text
+ServerPlugins/ArkoviaEconomy.dll
+```
+
+Then perform a full TShock restart.
+
+## ArkoviaCrossplay.dll
+
+The companion crossplay bridge provides approved Terraria 1.4.5.x PC/mobile handshake compatibility.
+
+Build:
+
+```bash
+dotnet build crossplay/ArkoviaCrossplay/ArkoviaCrossplay.csproj -c Release
+```
+
+Output:
+
+```text
+crossplay/ArkoviaCrossplay/bin/Release/net9.0/ArkoviaCrossplay.dll
+```
+
+Install to:
+
+```text
+ServerPlugins/ArkoviaCrossplay.dll
+```
+
+The validated production build installed on the Arkovia host has SHA-256:
+
+```text
+0a1acad963a8b0c7ba0c8d817ba359d39a938d8cc235e2027821a13559a8d3dc
+```
+
+It was built with 0 warnings and 0 errors and successfully initialized on TShock 6.1 / Terraria 1.4.5.8.
+
+### Crossplay status
+
+- PC: supported normally.
+- Mobile 1.4.5.x: bridge deployed and active; real-device end-to-end validation is still ongoing.
+- Xbox / PlayStation / Nintendo Switch: not enabled by this plugin alone. Console platform networking/discovery support is still required.
+
+The bridge is intentionally allow-list based. Unknown Terraria protocols are not automatically accepted.
+
+Administration:
+
+```text
+/arcrossplay info
+/arcrossplay versions
+/arcrossplay verbose
+/arcrossplay reload
+```
+
+Permission:
+
+```text
+arkovia.crossplay.admin
+```
+
+## Release safety
+
+Before replacing either DLL on a live server:
+
+1. Broadcast a restart notice.
+2. Save the Terraria world.
+3. Shut TShock down cleanly.
+4. Replace the DLL(s).
+5. Start TShock.
+6. Verify port 7777 is listening.
+7. Confirm both plugins initialized successfully in the TShock log.
+8. Test login and critical economy/marketplace workflows.
+
+Do not commit secrets, REST tokens, signing keys, recovery phrases or production environment files to the repository.
