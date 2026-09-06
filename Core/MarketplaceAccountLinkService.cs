@@ -41,11 +41,11 @@ public sealed class MarketplaceAccountLinkService
         }
     }
 
-    public WebAccountLink Redeem(string walletAddress, string code, string webSubject)
+    public WebAccountLink Redeem(string walletAddress, string code, string requestedWebSubject)
     {
         walletAddress = walletAddress.Trim();
         code = code.Trim();
-        webSubject = webSubject.Trim();
+        requestedWebSubject = requestedWebSubject.Trim();
         if (walletAddress.Length is < 3 or > 64 || code.Length != 6 || !code.All(char.IsDigit))
             throw new InvalidOperationException("Invalid or expired authentication code.");
 
@@ -70,7 +70,10 @@ public sealed class MarketplaceAccountLinkService
                 throw new InvalidOperationException("Invalid or expired authentication code.");
             }
 
-            var link = _db.CreateOrConfirmWebAccountLink(challenge.UserId, challenge.AccountName, webSubject);
+            // Wallet authentication is a new front door to the player's existing identity.
+            // Preserve a pre-wallet-auth marketplace subject so existing listings/history do not break.
+            var existing = _db.GetWebAccountLinkByUser(challenge.UserId);
+            var link = existing ?? _db.CreateOrConfirmWebAccountLink(challenge.UserId, challenge.AccountName, requestedWebSubject);
             _byWallet.Remove(walletAddress);
             return link;
         }
